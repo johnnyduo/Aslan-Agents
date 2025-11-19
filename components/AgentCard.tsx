@@ -7,11 +7,23 @@ interface AgentCardProps {
   isActive: boolean;
   onToggle: () => void;
   onClick: () => void;
+  status?: 'idle' | 'negotiating' | 'streaming' | 'offline';
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick, status }) => {
   // Pixel art placeholder
   const spriteUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.spriteSeed}&backgroundColor=transparent`;
+  const currentStatus = status || agent.status;
+  
+  const getStatusColor = () => {
+    if (!isActive) return 'bg-gray-500';
+    switch (currentStatus) {
+      case 'streaming': return 'bg-purple-500 animate-pulse';
+      case 'negotiating': return 'bg-yellow-500 animate-pulse';
+      case 'offline': return 'bg-red-500';
+      default: return 'bg-neon-green animate-pulse';
+    }
+  };
 
   return (
     <div 
@@ -26,9 +38,9 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClic
     >
       {/* Status Indicator */}
       <div className="absolute top-3 right-3 flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-neon-green animate-pulse' : 'bg-gray-500'}`} />
+        <div className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
         <span className="text-[10px] font-mono uppercase tracking-wider text-white/60">
-          {agent.status}
+          {isActive ? currentStatus : 'offline'}
         </span>
       </div>
 

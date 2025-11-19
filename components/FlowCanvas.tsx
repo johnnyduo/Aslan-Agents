@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -12,6 +12,7 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   BackgroundVariant,
+  MarkerType,
 } from 'reactflow';
 import { AgentMetadata } from '../types';
 
@@ -65,9 +66,10 @@ interface FlowCanvasProps {
   agents: AgentMetadata[];
   activeAgents: string[];
   streamingEdges: string[]; // list of edge IDs that are streaming
+  onNodePositionsChange?: (positions: Record<string, { x: number; y: number }>) => void;
 }
 
-const FlowCanvas: React.FC<FlowCanvasProps> = ({ agents, activeAgents, streamingEdges }) => {
+const FlowCanvas: React.FC<FlowCanvasProps> = ({ agents, activeAgents, streamingEdges, onNodePositionsChange }) => {
   const nodeTypes = useMemo(() => ({ agentNode: AgentNode }), []);
 
   // Convert active agents to Nodes
@@ -91,12 +93,27 @@ const FlowCanvas: React.FC<FlowCanvasProps> = ({ agents, activeAgents, streaming
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: '#43FF4D' } }, eds)),
+    (params: Connection) => setEdges((eds) => addEdge({ 
+      ...params, 
+      animated: true, 
+      type: 'default', // Use default for smooth bezier curves
+      style: { 
+        stroke: '#43FF4D',
+        strokeWidth: 3,
+        strokeDasharray: '5,5',
+      },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+        color: '#43FF4D',
+      },
+    }, eds)),
     [setEdges]
   );
 
   // Effect to update node data when props change (simulation updates)
-  React.useEffect(() => {
+  useEffect(() => {
     setNodes((nds) => 
       nds.map((node) => {
         // Find if this node is part of a streaming edge
@@ -113,19 +130,31 @@ const FlowCanvas: React.FC<FlowCanvasProps> = ({ agents, activeAgents, streaming
       })
     );
 
-    setEdges(eds => eds.map(e => ({
-      ...e,
-      animated: streamingEdges.includes(e.id),
-      style: { 
-        stroke: streamingEdges.includes(e.id) ? '#43FF4D' : '#1f2937',
-        strokeWidth: streamingEdges.includes(e.id) ? 2 : 1,
-        opacity: streamingEdges.includes(e.id) ? 1 : 0.5
-      }
-    })));
+    setEdges(eds => eds.map(e => {
+      const isStreaming = streamingEdges.includes(e.id);
+      return {
+        ...e,
+        animated: isStreaming,
+        className: isStreaming ? 'streaming-flow' : '',
+        type: 'default', // Bezier curves for smooth connections
+        style: { 
+          stroke: isStreaming ? '#43FF4D' : '#1f2937',
+          strokeWidth: isStreaming ? 4 : 2,
+          strokeDasharray: isStreaming ? '10,5' : '5,5',
+          opacity: isStreaming ? 1 : 0.6,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: isStreaming ? 24 : 18,
+          height: isStreaming ? 24 : 18,
+          color: isStreaming ? '#43FF4D' : '#1f2937',
+        }
+      };
+    }));
   }, [streamingEdges, activeAgents, setNodes, setEdges]);
 
   // Re-sync nodes if active agent list changes length significantly (simple approach)
-  React.useEffect(() => {
+  useEffect(() => {
      if (nodes.length !== activeAgents.length) {
          const newNodes = activeAgents.map((id, index) => {
             const existingNode = nodes.find(n => n.id === id);
@@ -134,13 +163,27 @@ const FlowCanvas: React.FC<FlowCanvasProps> = ({ agents, activeAgents, streaming
             return {
                 id: agent.id,
                 type: 'agentNode',
-                position: { x: Math.random() * 600, y: Math.random() * 400 },
+                position: { 
+                  x: 150 + (index * 200) + (Math.random() * 50 - 25), 
+                  y: 150 + ((index % 2) * 200) + (Math.random() * 50 - 25) 
+                },
                 data: { agent, isStreaming: false, currentAction: 'Booting...' }
             };
          });
          setNodes(newNodes);
      }
   }, [activeAgents, agents, nodes, setNodes]);
+
+  // Report node positions to parent for dialogue placement
+  useEffect(() => {
+    if (onNodePositionsChange && nodes.length > 0) {
+      const positions: Record<string, { x: number; y: number }> = {};
+      nodes.forEach(node => {
+        positions[node.id] = { x: node.position.x, y: node.position.y };
+      });
+      onNodePositionsChange(positions);
+    }
+  }, [nodes, onNodePositionsChange]);
 
   return (
     <div className="w-full h-full bg-[#050505] relative">

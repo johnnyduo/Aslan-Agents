@@ -27,6 +27,8 @@
             animation: {
               'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'stream-flow': 'stream-flow 1s linear infinite',
+              'fade-in': 'fade-in 0.3s ease-out',
+              'bounce-in': 'bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
             },
             keyframes: {
               'pulse-glow': {
@@ -36,6 +38,16 @@
               'stream-flow': {
                 '0%': { strokeDashoffset: '20' },
                 '100%': { strokeDashoffset: '0' },
+              },
+              'fade-in': {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              'bounce-in': {
+                '0%': { transform: 'scale(0.3)', opacity: '0' },
+                '50%': { transform: 'scale(1.05)' },
+                '70%': { transform: 'scale(0.9)' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
               }
             }
           },
@@ -47,6 +59,14 @@
         background-color: #050505;
         color: #e2e8f0;
         overflow: hidden;
+      }
+      
+      @keyframes spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      .animate-spin-slow {
+        animation: spin-slow 3s linear infinite;
       }
       /* Custom scrollbar for the cyber feel */
       ::-webkit-scrollbar {
@@ -71,17 +91,47 @@
       .react-flow__edge-path {
         stroke: #1f2937;
         stroke-width: 2;
+        transition: stroke 0.3s ease, stroke-width 0.3s ease;
       }
+      /* Animated flowing edge with moving dashed pattern */
       .react-flow__edge.animated .react-flow__edge-path {
         stroke: #43FF4D;
-        stroke-dasharray: 5;
-        animation: stream-flow 1s linear infinite;
+        stroke-width: 3;
+        stroke-dasharray: 10 5;
+        animation: dash-flow 1.5s linear infinite;
+        filter: drop-shadow(0 0 4px #43FF4D);
+      }
+      .react-flow__edge.streaming-flow .react-flow__edge-path {
+        stroke: #43FF4D;
+        stroke-width: 4;
+        stroke-dasharray: 12 6;
+        animation: dash-flow 0.8s linear infinite;
+        filter: drop-shadow(0 0 10px #43FF4D) drop-shadow(0 0 20px rgba(67, 255, 77, 0.5));
+      }
+      /* Flowing animation for dashed lines */
+      @keyframes dash-flow {
+        0% {
+          stroke-dashoffset: 0;
+        }
+        100% {
+          stroke-dashoffset: -30;
+        }
+      }
+      @keyframes pulse-stroke {
+        0%, 100% { stroke-opacity: 0.6; }
+        50% { stroke-opacity: 1; }
       }
       .react-flow__handle {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         background: #43FF4D;
-        border: 1px solid #000;
+        border: 2px solid #000;
+        transition: all 0.3s ease;
+      }
+      .react-flow__handle:hover {
+        width: 14px;
+        height: 14px;
+        box-shadow: 0 0 10px #43FF4D;
       }
     </style>
   <script type="importmap">
@@ -98,5 +148,6 @@
 </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

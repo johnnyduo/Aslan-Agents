@@ -1,10 +1,16 @@
 export enum AgentRole {
+  COMMANDER = 'Commander',
   NAVIGATOR = 'Navigator',
   ARCHIVIST = 'Archivist',
   MERCHANT = 'Merchant',
   SENTINEL = 'Sentinel',
   ORACLE = 'Oracle',
   GLITCH = 'Glitch',
+}
+
+export interface AgentPersonality {
+  traits: string[];
+  dialogues: string[];
 }
 
 export interface AgentMetadata {
@@ -19,6 +25,17 @@ export interface AgentMetadata {
   spriteSeed: string;
   hfPrompt: string; // The prompt used to generate the sprite (conceptual)
   status: 'idle' | 'negotiating' | 'streaming' | 'offline';
+  personality?: AgentPersonality;
+}
+
+export interface AgentTaskResult {
+  agentId: string;
+  agentName: string;
+  taskType: 'market_research' | 'sentiment_analysis' | 'security_audit' | 'price_prediction' | 'arbitrage_scan' | 'route_optimization';
+  timestamp: number;
+  status: 'success' | 'failed' | 'pending';
+  data: any;
+  summary: string;
 }
 
 export interface LogMessage {
