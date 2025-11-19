@@ -44,16 +44,25 @@ export const geminiService = {
       
       return { text };
     } catch (error: any) {
-      console.error('Gemini API error:', error);
-      
       // Handle specific error cases
       let errorMessage = 'AI service temporarily unavailable';
-      if (error?.message?.includes('overloaded')) {
+      let shouldLogError = true;
+      
+      if (error?.message?.includes('overloaded') || error?.error?.message?.includes('overloaded')) {
         errorMessage = 'AI service is busy, please try again';
+        shouldLogError = false; // Don't spam console for expected overload errors
       } else if (error?.message?.includes('quota')) {
         errorMessage = 'API quota exceeded';
-      } else if (error?.message?.includes('UNAVAILABLE')) {
+      } else if (error?.message?.includes('UNAVAILABLE') || error?.error?.status === 'UNAVAILABLE') {
         errorMessage = 'AI service temporarily down';
+        shouldLogError = false; // Don't spam console for expected unavailable errors
+      }
+      
+      // Only log unexpected errors
+      if (shouldLogError) {
+        console.error('Gemini API error:', error);
+      } else {
+        console.warn('Gemini API:', errorMessage);
       }
       
       return { 
@@ -393,15 +402,35 @@ export const orchestrator = {
       results.sentiment = sentiment;
       results.onchainData = { recentTransactions: transactions };
 
-      // Generate AI insight based on collected data
-      if (marketData && marketData.price && sentiment) {
-        const context = `${symbol} is at $${marketData.price.toFixed(2)} with ${sentiment.overallSentiment} sentiment`;
-        results.aiInsight = await geminiService.generateStrategy(agentRole, context);
-      } else if (marketData && marketData.price) {
-        const context = `${symbol} is currently at $${marketData.price.toFixed(2)}`;
-        results.aiInsight = await geminiService.generateStrategy(agentRole, context);
-      } else {
-        results.aiInsight = 'Market data temporarily unavailable, standing by for updates';
+      // Generate AI insight based on collected data (non-blocking)
+      try {
+        if (marketData && marketData.price && sentiment) {
+          const context = `${symbol} is at $${marketData.price.toFixed(2)} with ${sentiment.overallSentiment} sentiment`;
+          const aiResponse = await geminiService.generateStrategy(agentRole, context);
+          // Only use AI response if it's not an error message
+          if (aiResponse && !aiResponse.includes('unavailable') && !aiResponse.includes('busy')) {
+            results.aiInsight = aiResponse;
+          } else {
+            results.aiInsight = `Monitoring ${symbol}. Current price: $${marketData.price.toFixed(2)}`;
+          }
+        } else if (marketData && marketData.price) {
+          const context = `${symbol} is currently at $${marketData.price.toFixed(2)}`;
+          const aiResponse = await geminiService.generateStrategy(agentRole, context);
+          if (aiResponse && !aiResponse.includes('unavailable') && !aiResponse.includes('busy')) {
+            results.aiInsight = aiResponse;
+          } else {
+            results.aiInsight = `${symbol} at $${marketData.price.toFixed(2)}. Standing by for market signals.`;
+          }
+        } else {
+          results.aiInsight = 'Awaiting market data feed. Systems operational.';
+        }
+      } catch (error) {
+        // Fallback insight when AI is completely unavailable
+        if (marketData && marketData.price) {
+          results.aiInsight = `Agent ready. Tracking ${symbol} at $${marketData.price.toFixed(2)}.`;
+        } else {
+          results.aiInsight = 'Systems operational. Awaiting data feed.';
+        }
       }
 
       return results;

@@ -47,6 +47,12 @@ export const modal = createAppKit({
   adapters: [wagmiAdapter],
   networks: [hederaTestnet],
   projectId,
+  metadata: {
+    name: 'SpriteOps',
+    description: 'AI Agent Network on Hedera',
+    url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+    icons: [typeof window !== 'undefined' ? `${window.location.origin}/favicon.svg` : 'http://localhost:3000/favicon.svg']
+  },
   features: {
     analytics: true,
     email: false,
