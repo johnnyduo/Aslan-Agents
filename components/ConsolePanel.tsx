@@ -17,6 +17,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ logs }) => {
     switch(type) {
       case 'A2A': return <MessageSquare size={12} className="text-blue-400" />;
       case 'x402': return <DollarSign size={12} className="text-neon-green" />;
+      case 'COMMANDER': return <span className="text-[#39ff14] font-bold">📋</span>;
       default: return <Terminal size={12} className="text-gray-400" />;
     }
   };
@@ -39,6 +40,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({ logs }) => {
             <span className={`
               ${log.type === 'x402' ? 'text-neon-green' : ''}
               ${log.type === 'A2A' ? 'text-blue-300' : ''}
+              ${log.type === 'COMMANDER' ? 'text-[#39ff14] font-bold' : ''}
               ${log.type === 'SYSTEM' ? 'text-gray-300' : ''}
               break-all
             `}>

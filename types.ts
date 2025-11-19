@@ -31,7 +31,7 @@ export interface AgentMetadata {
 export interface AgentTaskResult {
   agentId: string;
   agentName: string;
-  taskType: 'market_research' | 'sentiment_analysis' | 'security_audit' | 'price_prediction' | 'arbitrage_scan' | 'route_optimization';
+  taskType: 'market_research' | 'sentiment_analysis' | 'security_audit' | 'price_prediction' | 'arbitrage_scan' | 'route_optimization' | 'custom_order';
   timestamp: number;
   status: 'success' | 'failed' | 'pending' | 'error';
   data?: any;
@@ -41,7 +41,7 @@ export interface AgentTaskResult {
 export interface LogMessage {
   id: string;
   timestamp: string;
-  type: 'A2A' | 'x402' | 'SYSTEM';
+  type: 'A2A' | 'x402' | 'SYSTEM' | 'COMMANDER';
   content: string;
   agentId?: string;
 }

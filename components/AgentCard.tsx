@@ -12,10 +12,13 @@ interface AgentCardProps {
   isMinting?: boolean;
   isDeactivating?: boolean;
   isOnChain?: boolean;
+  customOrder?: string;
+  onCustomOrderChange?: (order: string) => void;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick, status, isAutoMode, isMinting, isDeactivating, isOnChain }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick, status, isAutoMode, isMinting, isDeactivating, isOnChain, customOrder, onCustomOrderChange }) => {
   const isLocked = isAutoMode && agent.id !== 'a0'; // Lock all except Commander in auto mode
+  const isCommander = agent.id === 'a0';
   
   // Pixel art placeholder
   const spriteUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.spriteSeed}&backgroundColor=transparent`;
@@ -96,6 +99,22 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClic
             <span>#{agent.tokenId}</span>
           </div>
         </div>
+
+        {/* Custom Order Input for Commander */}
+        {isCommander && onCustomOrderChange && (
+          <div className="w-full mb-3" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="text"
+              value={customOrder || ''}
+              onChange={(e) => onCustomOrderChange(e.target.value)}
+              placeholder="Custom order (optional)..."
+              className="w-full px-2 py-1.5 text-xs bg-black/40 border border-white/20 rounded text-white placeholder-white/40 focus:border-[#39ff14] focus:outline-none font-mono"
+            />
+            <div className="text-[9px] text-white/40 mt-1 text-left">
+              {customOrder ? '📋 Will execute custom order' : '🤖 Default: portfolio & market analysis'}
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2 w-full mt-auto">
            <button 

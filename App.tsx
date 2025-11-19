@@ -122,6 +122,9 @@ const App: React.FC = () => {
     startTime: number;
   }>>({});
 
+  // --- Commander Custom Order ---
+  const [commanderCustomOrder, setCommanderCustomOrder] = useState<string>('');
+
   // --- Refs to track current transaction context ---
   const currentMintingAgentRef = useRef<string | null>(null);
   const currentDeactivatingAgentRef = useRef<string | null>(null);
@@ -397,7 +400,7 @@ const App: React.FC = () => {
   }, [operationMode, commanderBudget]);
 
   // --- Handlers ---
-  const addLog = (type: 'A2A' | 'x402' | 'SYSTEM', content: string) => {
+  const addLog = (type: 'A2A' | 'x402' | 'SYSTEM' | 'COMMANDER', content: string) => {
     const newLog: LogMessage = {
       id: Math.random().toString(36).substr(2, 9),
       timestamp: new Date().toLocaleTimeString(),
@@ -774,6 +777,30 @@ const App: React.FC = () => {
     if (!agent) return;
 
     setAgentStatuses(prev => ({ ...prev, [agentId]: 'negotiating' }));
+    
+    // Check if Commander has custom order
+    if (agentId === 'a0' && commanderCustomOrder.trim()) {
+      agentStatusManager.setStatus(agentId, `Executing custom order: ${commanderCustomOrder.substring(0, 30)}...`);
+      addLog('COMMANDER', `📋 Custom Order: "${commanderCustomOrder}"`);
+      
+      // Show Commander executing the custom order
+      showAgentDialogue(agentId, 'success', `Executing your order: "${commanderCustomOrder}"`);
+      
+      // Add custom order task result
+      addTaskResult({
+        agentId: agent.id,
+        agentName: agent.name,
+        taskType: 'custom_order',
+        status: 'success',
+        data: { order: commanderCustomOrder },
+        summary: `Custom order executed: "${commanderCustomOrder}"`
+      });
+      
+      setAgentStatuses(prev => ({ ...prev, [agentId]: 'idle' }));
+      return;
+    }
+
+    // Default behavior: market intelligence
     agentStatusManager.setStatus(agentId, 'Fetching intelligence...');
 
     try {
@@ -880,7 +907,7 @@ const App: React.FC = () => {
       
       setAgentStatuses(prev => ({ ...prev, [agentId]: 'idle' }));
     }
-  }, [addTaskResult, showAgentDialogue, activeAgents, executeAutonomousSwap]);
+  }, [addTaskResult, showAgentDialogue, activeAgents, executeAutonomousSwap, commanderCustomOrder]);
 
   // --- Auto-connect Commander to all active agents ---
   useEffect(() => {
@@ -1131,6 +1158,8 @@ const App: React.FC = () => {
                 isMinting={mintingAgents.has(agent.id)}
                 isDeactivating={deactivatingAgents.has(agent.id)}
                 isOnChain={!!onChainAgents[agent.id]}
+                customOrder={agent.id === 'a0' ? commanderCustomOrder : undefined}
+                onCustomOrderChange={agent.id === 'a0' ? setCommanderCustomOrder : undefined}
               />
             ))}
           </div>
