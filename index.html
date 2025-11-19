@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SPRITEOPS - Agent Intelligence Grid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/reactflow/dist/style.css" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              neon: {
+                green: '#43FF4D',
+                dark: '#0D140E',
+                glow: 'rgba(67, 255, 77, 0.3)',
+              },
+              glass: {
+                base: 'rgba(13, 20, 14, 0.7)',
+                border: 'rgba(67, 255, 77, 0.2)',
+              }
+            },
+            fontFamily: {
+              mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+            },
+            animation: {
+              'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'stream-flow': 'stream-flow 1s linear infinite',
+            },
+            keyframes: {
+              'pulse-glow': {
+                '0%, 100%': { boxShadow: '0 0 5px #43FF4D' },
+                '50%': { boxShadow: '0 0 20px #43FF4D' },
+              },
+              'stream-flow': {
+                '0%': { strokeDashoffset: '20' },
+                '100%': { strokeDashoffset: '0' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      body {
+        background-color: #050505;
+        color: #e2e8f0;
+        overflow: hidden;
+      }
+      /* Custom scrollbar for the cyber feel */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #1f2937;
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #43FF4D;
+      }
+      
+      /* ReactFlow Customization for Neon Theme */
+      .react-flow__node {
+        border: none !important;
+      }
+      .react-flow__edge-path {
+        stroke: #1f2937;
+        stroke-width: 2;
+      }
+      .react-flow__edge.animated .react-flow__edge-path {
+        stroke: #43FF4D;
+        stroke-dasharray: 5;
+        animation: stream-flow 1s linear infinite;
+      }
+      .react-flow__handle {
+        width: 8px;
+        height: 8px;
+        background: #43FF4D;
+        border: 1px solid #000;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "reactflow": "https://aistudiocdn.com/reactflow@^11.11.4"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

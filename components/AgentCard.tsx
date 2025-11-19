@@ -1,0 +1,83 @@
+import React from 'react';
+import { AgentMetadata } from '../types';
+import { Activity, Shield, Cpu, Hash, ExternalLink } from 'lucide-react';
+
+interface AgentCardProps {
+  agent: AgentMetadata;
+  isActive: boolean;
+  onToggle: () => void;
+  onClick: () => void;
+}
+
+const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick }) => {
+  // Pixel art placeholder
+  const spriteUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.spriteSeed}&backgroundColor=transparent`;
+
+  return (
+    <div 
+      onClick={onClick}
+      className={`
+        relative group cursor-pointer transition-all duration-300
+        rounded-xl border backdrop-blur-md overflow-hidden
+        ${isActive 
+          ? 'border-neon-green bg-neon-green/10 shadow-[0_0_15px_rgba(67,255,77,0.3)]' 
+          : 'border-white/10 bg-white/5 hover:border-neon-green/50'}
+      `}
+    >
+      {/* Status Indicator */}
+      <div className="absolute top-3 right-3 flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-neon-green animate-pulse' : 'bg-gray-500'}`} />
+        <span className="text-[10px] font-mono uppercase tracking-wider text-white/60">
+          {agent.status}
+        </span>
+      </div>
+
+      <div className="p-4 flex flex-col items-center text-center">
+        {/* Sprite Avatar Container */}
+        <div className="w-20 h-20 mb-4 relative">
+            <div className="absolute inset-0 bg-neon-green/20 rounded-full blur-xl opacity-50"></div>
+            <img 
+              src={spriteUrl} 
+              alt={agent.name} 
+              className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] transition-transform group-hover:scale-110 duration-300"
+              style={{ imageRendering: 'pixelated' }}
+            />
+        </div>
+
+        <h3 className="text-white font-bold font-mono tracking-tight">{agent.name}</h3>
+        <p className="text-neon-green text-xs mb-3">{agent.role}</p>
+        
+        <div className="w-full grid grid-cols-2 gap-2 text-[10px] text-gray-400 font-mono mb-4">
+          <div className="flex items-center gap-1 bg-black/30 p-1 rounded justify-center">
+            <Shield size={10} className="text-neon-green" />
+            <span>TS: {agent.trustScore}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-black/30 p-1 rounded justify-center">
+            <Hash size={10} />
+            <span>#{agent.tokenId}</span>
+          </div>
+        </div>
+
+        <div className="flex gap-2 w-full mt-auto">
+           <button 
+            onClick={(e) => { e.stopPropagation(); onToggle(); }}
+            className={`
+              flex-1 py-1 px-2 rounded text-[10px] font-bold font-mono uppercase tracking-wider border transition-all
+              ${isActive 
+                ? 'border-neon-green bg-neon-green text-black hover:bg-white hover:border-white' 
+                : 'border-white/20 text-white/60 hover:border-white hover:text-white'}
+            `}
+           >
+             {isActive ? 'Deactivate' : 'Activate'}
+           </button>
+        </div>
+      </div>
+      
+      {/* Decorative corner accents */}
+      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-neon-green opacity-50"></div>
+      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-neon-green opacity-50"></div>
+    </div>
+  );
+};
+
+export default AgentCard;
