@@ -26,8 +26,10 @@ export const hederaTestnet = defineChain({
   testnet: true
 });
 
-// USDC Token on Hedera Testnet
+// Contract Addresses on Hedera Testnet
 export const USDC_ADDRESS = '0x340e7949d378C6d6eB1cf7391F5C39b6c826BA9d';
+export const EIP8004_ADDRESS = '0x650665fdf08EeE72e84953D5a99AbC8196C56E77';
+export const X402_STREAMING_ADDRESS = '0x805492D120C29A4933FB1D3FfCe944A2D42222F4';
 
 // Reown Project ID from environment
 const projectId = (import.meta as any).env?.VITE_REOWN_PROJECT_ID || 'c97c2ccda03a64c922bf2d188b6219f7';

@@ -11,6 +11,7 @@ import { AgentResultsPage } from './components/AgentResultsPage';
 import { ModeControl } from './components/ModeControl';
 import { AgentProgressBar } from './components/AgentProgressBar';
 import { CaptainFundPanel } from './components/CaptainFundPanel';
+import { DepositModal } from './components/DepositModal';
 import { orchestrator, cryptoService, newsService, hederaService, agentStatusManager, sauceSwapService } from './services/api';
 import { testAPIs } from './testAPIs';
 import { useMintAgent, useDeactivateAgent } from './hooks/useAgentContract';
@@ -22,6 +23,28 @@ import './toast-custom.css';
 // Make test function available in browser console
 if (typeof window !== 'undefined') {
   (window as any).testAPIs = testAPIs;
+  
+  // Migration helper: Move old onChainAgents to current wallet
+  (window as any).migrateAgentsToWallet = (walletAddress: string) => {
+    const oldData = localStorage.getItem('onChainAgents');
+    if (!oldData) {
+      console.log('No old agent data found');
+      return;
+    }
+    
+    const walletKey = `onChainAgents_${walletAddress.toLowerCase()}`;
+    localStorage.setItem(walletKey, oldData);
+    console.log(`✅ Migrated agents to wallet: ${walletAddress}`);
+    console.log('Reload the page to see your agents');
+  };
+  
+  // Helper: Clear all test agents
+  (window as any).clearAllAgents = () => {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('onChainAgents'));
+    keys.forEach(k => localStorage.removeItem(k));
+    console.log(`✅ Cleared ${keys.length} agent registries`);
+    console.log('Reload the page to start fresh');
+  };
 }
 
 // Helper to get Hedera testnet explorer URL
@@ -72,8 +95,12 @@ const App: React.FC = () => {
   const [agentStatuses, setAgentStatuses] = useState<Record<string, 'idle' | 'negotiating' | 'streaming' | 'offline'>>({});
   const [mintingAgents, setMintingAgents] = useState<Set<string>>(new Set());
   const [deactivatingAgents, setDeactivatingAgents] = useState<Set<string>>(new Set());
+  // Wallet-based agent registry: stores agentId -> tokenId mapping per wallet address
   const [onChainAgents, setOnChainAgents] = useState<Record<string, bigint>>(() => {
-    const stored = localStorage.getItem('onChainAgents');
+    if (!address) return {};
+    
+    const walletKey = `onChainAgents_${address.toLowerCase()}`;
+    const stored = localStorage.getItem(walletKey);
     return stored ? JSON.parse(stored, (key, value) => {
       // Convert string back to bigint for values that look like numbers
       if (typeof value === 'string' && /^\d+$/.test(value)) {
@@ -81,7 +108,7 @@ const App: React.FC = () => {
       }
       return value;
     }) : {};
-  }); // agentId -> tokenId
+  }); // agentId -> tokenId (per wallet)
   
   // --- New State for Dialogue & Results ---
   const [activeDialogue, setActiveDialogue] = useState<{
@@ -101,6 +128,7 @@ const App: React.FC = () => {
   });
   const [showResultsPage, setShowResultsPage] = useState(false);
   const [agentPositions, setAgentPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [showDepositModal, setShowDepositModal] = useState(false);
   
   // --- Mode Control State ---
   const [operationMode, setOperationMode] = useState<'auto' | 'manual'>('manual');
@@ -159,6 +187,17 @@ const App: React.FC = () => {
   // --- Memoized callback for closing dialogue ---
   const handleCloseDialogue = useCallback(() => {
     setActiveDialogue(null);
+  }, []);
+
+  // --- Memoized callback for node position changes ---
+  const handleNodePositionsChange = useCallback((positions: Record<string, { x: number; y: number }>) => {
+    setAgentPositions(positions);
+  }, []);
+
+  // --- Memoized callback for edge changes ---
+  const handleEdgesChange = useCallback((edges: any[]) => {
+    setPersistentEdges(edges);
+    localStorage.setItem('agentConnections', JSON.stringify(edges));
   }, []);
 
   // --- Initialization: Check API Status ---
@@ -364,36 +403,54 @@ const App: React.FC = () => {
     }
   }, [deactivateSuccess, deactivateHash]);
 
-  // --- Persist onChainAgents to localStorage ---
+  // --- Persist onChainAgents to localStorage (wallet-specific) ---
   useEffect(() => {
-    console.log('💾 Persisting onChainAgents to localStorage:', onChainAgents);
-    localStorage.setItem('onChainAgents', JSON.stringify(onChainAgents, (key, value) => {
+    if (!address) return;
+    
+    const walletKey = `onChainAgents_${address.toLowerCase()}`;
+    localStorage.setItem(walletKey, JSON.stringify(onChainAgents, (key, value) => {
       // Convert bigint to string for JSON serialization
       return typeof value === 'bigint' ? value.toString() : value;
     }));
-  }, [onChainAgents]);
+  }, [onChainAgents, address]);
 
-  // --- Debug onChainAgents changes ---
+  // --- Load wallet-specific agents when address changes ---
   useEffect(() => {
-    console.log('🔄 onChainAgents state updated:', Object.keys(onChainAgents).length, 'agents', onChainAgents);
-    console.log('📦 localStorage onChainAgents:', localStorage.getItem('onChainAgents'));
-    // Check specifically for Commander
-    if (onChainAgents['a0']) {
-      console.log('✅ Commander IS in onChainAgents with tokenId:', onChainAgents['a0']);
-    } else {
-      console.log('❌ Commander NOT in onChainAgents');
+    if (!address) {
+      setOnChainAgents({});
+      return;
     }
-  }, [onChainAgents]);
+    
+    const walletKey = `onChainAgents_${address.toLowerCase()}`;
+    const stored = localStorage.getItem(walletKey);
+    
+    if (stored) {
+      const loadedAgents = JSON.parse(stored, (key, value) => {
+        if (typeof value === 'string' && /^\d+$/.test(value)) {
+          return BigInt(value);
+        }
+        return value;
+      });
+      setOnChainAgents(loadedAgents);
+      addLog('SYSTEM', `✅ Loaded ${Object.keys(loadedAgents).length} registered agents for this wallet`);
+    } else {
+      setOnChainAgents({});
+      addLog('SYSTEM', '👋 Welcome! No agents registered yet for this wallet');
+    }
+  }, [address]);
 
   // --- Auto Mode: Activate Commander when mode switches ---
   useEffect(() => {
     if (operationMode === 'auto') {
-      // Auto-activate Commander if not active
-      if (!activeAgents.includes('a0')) {
-        addLog('SYSTEM', '⚡ AUTO MODE: Activating Commander Nexus with budget of ' + commanderBudget.toFixed(2) + ' USDC');
-        setActiveAgents(prev => ['a0', ...prev]);
-        setTimeout(() => showAgentDialogue('a0', 'greeting'), 1000);
-      }
+      // Auto-activate Commander if not active (check via callback to avoid dependency)
+      setActiveAgents(prev => {
+        if (!prev.includes('a0')) {
+          addLog('SYSTEM', '⚡ AUTO MODE: Activating Commander Nexus with budget of ' + commanderBudget.toFixed(2) + ' USDC');
+          setTimeout(() => showAgentDialogue('a0', 'greeting'), 1000);
+          return ['a0', ...prev];
+        }
+        return prev;
+      });
       setBudgetSpent(0); // Reset budget spent
     } else {
       // Manual mode: can deactivate all if needed
@@ -428,21 +485,107 @@ const App: React.FC = () => {
     } else {
       const dialogues = agent.personality.dialogues;
       
-      // Contextual dialogue selection for more natural conversation
-      if (context === 'greeting') {
-        // Use first dialogue as greeting
-        selectedDialogue = dialogues[0];
-      } else if (context === 'analyzing') {
-        // Prefer middle dialogues for analytical moments
-        const analyticalIndex = Math.floor(dialogues.length / 3) + Math.floor(Math.random() * 2);
-        selectedDialogue = dialogues[analyticalIndex] || dialogues[Math.floor(Math.random() * dialogues.length)];
-      } else if (context === 'success') {
-        // Use later dialogues for success moments
-        const successIndex = Math.floor(dialogues.length * 0.6) + Math.floor(Math.random() * 2);
-        selectedDialogue = dialogues[successIndex] || dialogues[Math.floor(Math.random() * dialogues.length)];
+      // Check if this is Captain and analyze team state
+      const isCaptain = agentId === 'a0';
+      const captainConnections = persistentEdges.filter(e => e.source === 'a0' || e.target === 'a0');
+      const connectedAgentIds = captainConnections.map(e => e.source === 'a0' ? e.target : e.source).filter(id => id !== 'a0');
+      const hasTeam = connectedAgentIds.length > 0;
+      
+      // Context-aware A2A dialogue for Captain
+      if (isCaptain && context === 'greeting' && !hasTeam) {
+        // Captain introduction - incentivize building team
+        const recruitmentMessages = [
+          "⚔️ Commander ready. Connect me to specialists for coordinated operations.",
+          "🎯 Standing by. I require tactical support—activate and connect agents to begin.",
+          "📡 Systems online. Build my network to unlock full command capabilities.",
+          "🌟 Commander Aslan reporting. I coordinate better with a connected squad—let's assemble the team."
+        ];
+        selectedDialogue = recruitmentMessages[Math.floor(Math.random() * recruitmentMessages.length)];
+      } else if (isCaptain && hasTeam) {
+        // Captain has team - show coordination dialogues
+        const connectedAgents = connectedAgentIds.map(id => AGENTS.find(a => a.id === id)).filter(Boolean);
+        const agentNames = connectedAgents.map(a => a.name).join(', ');
+        
+        if (context === 'success') {
+          const teamSuccessMessages = [
+            `✅ Intel received. ${agentNames}—excellent work. Mission parameters updated.`,
+            `🎖️ Outstanding execution, team. ${connectedAgents[0]?.name}, your data is gold.`,
+            `⚡ Grid synchronized. All agents performing optimally—${agentNames}, maintain frequency.`,
+            `📊 Analysis complete. ${connectedAgents[Math.floor(Math.random() * connectedAgents.length)]?.name}, your insights are invaluable.`
+          ];
+          selectedDialogue = teamSuccessMessages[Math.floor(Math.random() * teamSuccessMessages.length)];
+        } else if (context === 'analyzing') {
+          const coordinationMessages = [
+            `🔍 Scanning markets... ${connectedAgents[0]?.name}, standby for coordination signal.`,
+            `⚙️ Processing strategy with ${agentNames}. Grid intelligence flowing.`,
+            `🌐 Cross-referencing data streams. ${connectedAgents[Math.floor(Math.random() * connectedAgents.length)]?.name}, await further orders.`,
+            `📡 Orchestrating team analysis. All connected agents on mission clock.`
+          ];
+          selectedDialogue = coordinationMessages[Math.floor(Math.random() * coordinationMessages.length)];
+        } else {
+          // General team chatter
+          const teamDialogues = [
+            `💼 Team status: ${connectedAgents.length} agents online. Efficiency optimal.`,
+            `🎯 ${agentNames}—maintain positions. I'll coordinate next moves.`,
+            `⚡ Network active. Squad ready for deployment.`,
+            `🛡️ All systems nominal. ${connectedAgents[0]?.name}, report when ready.`
+          ];
+          selectedDialogue = teamDialogues[Math.floor(Math.random() * teamDialogues.length)];
+        }
+      } else if (!isCaptain) {
+        // Non-captain agents - check if connected to Captain
+        const connectedToCaptain = persistentEdges.some(e => 
+          (e.source === 'a0' && e.target === agentId) || 
+          (e.target === 'a0' && e.source === agentId)
+        );
+        
+        if (!connectedToCaptain && context === 'greeting') {
+          // Agent introduction - incentivize connecting to Captain
+          const introMessages = {
+            a1: "🦅 Eagle eyes ready. Connect me to Commander Aslan for tactical reconnaissance.",
+            a2: "📚 Archives indexed. Link me to Commander for strategic intelligence support.",
+            a3: "💰 Market sensors calibrated. Awaiting Commander's trading directives.",
+            a4: "🛡️ Security protocols active. Connect to Command for perimeter coordination.",
+            a5: "🔮 Predictive models online. I serve best under Commander Aslan's strategy.",
+            a6: "📨 Communication arrays ready. Link me to Command for intel relay."
+          };
+          selectedDialogue = introMessages[agentId as keyof typeof introMessages] || dialogues[0];
+        } else if (connectedToCaptain && context === 'success') {
+          // Connected to Captain - show collaborative success
+          const teamSuccessMessages = [
+            `✅ Mission complete, Commander. Data transmitted.`,
+            `🎯 Objective achieved. Awaiting next orders from Command.`,
+            `⚡ Task successful. Standing by for Commander's assessment.`,
+            `📡 Intelligence delivered to Command. ${agent.name} ready for next assignment.`
+          ];
+          selectedDialogue = teamSuccessMessages[Math.floor(Math.random() * teamSuccessMessages.length)];
+        } else {
+          // Standard personality dialogues
+          if (context === 'greeting') {
+            selectedDialogue = dialogues[0];
+          } else if (context === 'analyzing') {
+            const analyticalIndex = Math.floor(dialogues.length / 3) + Math.floor(Math.random() * 2);
+            selectedDialogue = dialogues[analyticalIndex] || dialogues[Math.floor(Math.random() * dialogues.length)];
+          } else if (context === 'success') {
+            const successIndex = Math.floor(dialogues.length * 0.6) + Math.floor(Math.random() * 2);
+            selectedDialogue = dialogues[successIndex] || dialogues[Math.floor(Math.random() * dialogues.length)];
+          } else {
+            selectedDialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+          }
+        }
       } else {
-        // Random for idle chatter
-        selectedDialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+        // Fallback to standard behavior
+        if (context === 'greeting') {
+          selectedDialogue = dialogues[0];
+        } else if (context === 'analyzing') {
+          const analyticalIndex = Math.floor(dialogues.length / 3) + Math.floor(Math.random() * 2);
+          selectedDialogue = dialogues[analyticalIndex] || dialogues[Math.floor(Math.random() * dialogues.length)];
+        } else if (context === 'success') {
+          const successIndex = Math.floor(dialogues.length * 0.6) + Math.floor(Math.random() * 2);
+          selectedDialogue = dialogues[successIndex] || dialogues[Math.floor(Math.random() * dialogues.length)];
+        } else {
+          selectedDialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+        }
       }
     }
     
@@ -456,7 +599,7 @@ const App: React.FC = () => {
     // Auto-dismiss after 5-7 seconds (varied for natural feel)
     const dismissTime = 5000 + Math.random() * 2000;
     setTimeout(() => setActiveDialogue(null), dismissTime);
-  }, []);
+  }, [persistentEdges]);
 
   const toggleAgent = useCallback(async (id: string) => {
     console.log('🎬 toggleAgent called for:', id);
@@ -909,7 +1052,7 @@ const App: React.FC = () => {
       
       setAgentStatuses(prev => ({ ...prev, [agentId]: 'idle' }));
     }
-  }, [addTaskResult, showAgentDialogue, activeAgents, executeAutonomousSwap, commanderCustomOrder]);
+  }, [addTaskResult, showAgentDialogue, executeAutonomousSwap, commanderCustomOrder]);
 
   // --- Auto-connect Commander to all active agents ---
   useEffect(() => {
@@ -1063,7 +1206,7 @@ const App: React.FC = () => {
     }, 5000); // INCREASED from 3s to 5s to reduce API call frequency
 
     return () => clearInterval(interval);
-  }, [activeAgents, fetchAgentIntelligence]);
+  }, [activeAgents]);
 
   // --- Commander: Orchestrate team operations ---
   useEffect(() => {
@@ -1137,6 +1280,7 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden font-sans selection:bg-neon-green selection:text-black">
       <WalletBar 
         onViewResults={() => setShowResultsPage(true)}
+        onOpenDeposit={() => setShowDepositModal(true)}
       />
       
       <div className="flex flex-1 overflow-hidden relative">
@@ -1216,14 +1360,11 @@ const App: React.FC = () => {
                 agents={AGENTS} 
                 activeAgents={activeAgents}
                 streamingEdges={streamingEdges}
-                onNodePositionsChange={setAgentPositions}
+                onNodePositionsChange={handleNodePositionsChange}
                 activeDialogue={activeDialogue}
                 onCloseDialogue={handleCloseDialogue}
                 persistentEdges={persistentEdges}
-                onEdgesChange={(edges) => {
-                  setPersistentEdges(edges);
-                  localStorage.setItem('agentConnections', JSON.stringify(edges));
-                }}
+                onEdgesChange={handleEdgesChange}
              />
              
              {/* Progress Bars Overlay */}
@@ -1274,6 +1415,17 @@ const App: React.FC = () => {
         theme="dark"
         style={{
           marginTop: '60px'
+        }}
+      />
+
+      {/* Deposit Modal for x402 Streaming Payments */}
+      <DepositModal
+        isOpen={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        captainAgentId={onChainAgents['a0'] ? Number(onChainAgents['a0']) : 0} // Aslan the Great (Commander)
+        onDepositSuccess={(streamId) => {
+          addLog('x402', `✅ Stream #${streamId} opened! Captain funded for autonomous operations.`);
+          setShowDepositModal(false);
         }}
       />
     </div>
