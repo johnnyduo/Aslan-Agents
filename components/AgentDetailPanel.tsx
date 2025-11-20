@@ -1,6 +1,7 @@
 import React from 'react';
 import { AgentMetadata } from '../types';
-import { X, Copy, Terminal } from 'lucide-react';
+import { X, Copy, Terminal, Zap } from 'lucide-react';
+import { AGENT_ABILITIES } from '../constants';
 
 interface AgentDetailPanelProps {
   agent: AgentMetadata | null;
@@ -67,6 +68,27 @@ const AgentDetailPanel: React.FC<AgentDetailPanelProps> = ({ agent, onClose }) =
                     ))}
                 </div>
             </div>
+
+            {/* API Integrations */}
+            {AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES]?.apis && AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES].apis.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs text-gray-500 font-mono uppercase flex items-center gap-2">
+                  <Zap size={12} className="text-neon-green" />
+                  API Integrations
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES].apis.map((api: string) => (
+                    <span 
+                      key={api} 
+                      className="px-2 py-1 bg-neon-green/10 border border-neon-green/30 rounded text-xs text-neon-green font-mono hover:bg-neon-green/20 transition-colors cursor-help"
+                      title={AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES].apiEndpoints?.[api] || api}
+                    >
+                      ⚡ {api}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
                 <label className="text-xs text-gray-500 font-mono uppercase">On-Chain Identity</label>

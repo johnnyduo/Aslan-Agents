@@ -175,29 +175,41 @@ export const AGENTS: AgentMetadata[] = [
 export const AGENT_ABILITIES = {
   'a0': { // Aslan the Great - Commander
     primary: 'Strategic Coordination',
-    apis: [],
+    apis: ['Gemini AI', 'Hedera Mirror Node'],
     operations: ['Agent orchestration', 'Decision making', 'Risk assessment', 'Resource allocation'],
-    canExecute: ['coordinate_agents', 'approve_operations', 'strategic_planning']
+    canExecute: ['coordinate_agents', 'approve_operations', 'strategic_planning'],
+    apiEndpoints: {
+      'Gemini AI': 'https://generativelanguage.googleapis.com/v1beta',
+      'Hedera Mirror Node': 'https://mainnet.mirrornode.hedera.com/api/v1'
+    }
   },
   'a1': { // Eagleton Skywatcher - Navigator
     primary: 'Market Intelligence',
-    apis: ['CoinGecko API'],
+    apis: ['TwelveData API', 'Hedera Mirror Node'],
     operations: ['Real-time price tracking', 'Volume analysis', 'Market cap monitoring', 'Token comparison'],
     canExecute: ['market_research', 'price_analysis', 'volume_tracking'],
     taskType: 'market_research',
-    dataSource: 'https://api.coingecko.com'
+    dataSource: 'https://api.twelvedata.com',
+    apiEndpoints: {
+      'TwelveData API': 'https://api.twelvedata.com',
+      'Hedera Mirror Node': 'https://testnet.mirrornode.hedera.com/api/v1'
+    }
   },
   'a2': { // Athena Nightwing - Archivist
     primary: 'Sentiment Analysis',
-    apis: ['News API', 'CryptoNews API'],
+    apis: ['News API', 'Gemini AI'],
     operations: ['News aggregation', 'Sentiment scoring', 'Event detection', 'Trend analysis'],
     canExecute: ['sentiment_analysis', 'news_monitoring', 'social_signals'],
     taskType: 'sentiment_analysis',
-    dataSource: 'Multiple news sources'
+    dataSource: 'Multiple news sources',
+    apiEndpoints: {
+      'News API': 'https://newsapi.org/v2',
+      'Gemini AI': 'https://generativelanguage.googleapis.com/v1beta'
+    }
   },
   'a3': { // Reynard Swift - Merchant
     primary: 'DEX Trading',
-    apis: ['SauceSwap API'],
+    apis: ['SauceSwap DEX', 'Hedera Mirror Node'],
     operations: ['HBAR/SAUCE swaps', 'Liquidity analysis', 'Price impact calculation', 'Slippage protection'],
     canExecute: ['swap_execution', 'dex_trading', 'liquidity_check'],
     taskType: 'swap_execution',
@@ -205,29 +217,45 @@ export const AGENT_ABILITIES = {
     tradingPairs: ['HBAR/SAUCE'],
     maxTradeSize: '0.05 HBAR',
     network: 'Hedera Testnet',
-    explorer: 'https://hashscan.io/testnet'
+    explorer: 'https://hashscan.io/testnet',
+    apiEndpoints: {
+      'SauceSwap DEX': 'https://testnet.sauceswap.finance',
+      'Hedera Mirror Node': 'https://testnet.mirrornode.hedera.com/api/v1'
+    }
   },
   'a4': { // Ursus Guardian - Sentinel
     primary: 'Risk Management',
-    apis: [],
+    apis: ['TwelveData API', 'Gemini AI'],
     operations: ['Volatility calculation', 'Position sizing', 'Stop-loss management', 'Black swan detection'],
     canExecute: ['risk_analysis', 'volatility_tracking', 'portfolio_protection'],
-    taskType: 'security_audit'
+    taskType: 'security_audit',
+    apiEndpoints: {
+      'TwelveData API': 'https://api.twelvedata.com',
+      'Gemini AI': 'https://generativelanguage.googleapis.com/v1beta'
+    }
   },
   'a5': { // Luna Mysticfang - Oracle
     primary: 'Technical Analysis',
-    apis: ['Gemini AI', 'TradingView'],
+    apis: ['Gemini AI', 'TwelveData API'],
     operations: ['Chart pattern recognition', 'Trend prediction', 'Support/resistance levels', 'AI-powered forecasting'],
     canExecute: ['price_prediction', 'technical_analysis', 'pattern_recognition'],
     taskType: 'price_prediction',
-    dataSource: 'Gemini AI + Market data'
+    dataSource: 'Gemini AI + Market data',
+    apiEndpoints: {
+      'Gemini AI': 'https://generativelanguage.googleapis.com/v1beta',
+      'TwelveData API': 'https://api.twelvedata.com'
+    }
   },
   'a6': { // Corvus Messenger - Glitch
     primary: 'News Monitoring',
-    apis: ['News API', 'Twitter API', 'Whale Alert'],
+    apis: ['News API', 'Hedera Mirror Node'],
     operations: ['Breaking news detection', 'Whale movement tracking', 'Event correlation', 'Real-time alerts'],
     canExecute: ['news_monitoring', 'alert_system', 'whale_tracking'],
-    taskType: 'sentiment_analysis'
+    taskType: 'sentiment_analysis',
+    apiEndpoints: {
+      'News API': 'https://newsapi.org/v2',
+      'Hedera Mirror Node': 'https://testnet.mirrornode.hedera.com/api/v1'
+    }
   }
 };
 

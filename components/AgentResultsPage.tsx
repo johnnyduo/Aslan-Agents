@@ -502,6 +502,24 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
                           </div>
                         </div>
                       )}
+                      {/* API Integrations */}
+                      {AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES]?.apis && 
+                       AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES].apis.length > 0 && (
+                        <div className="flex items-start gap-2 mb-3 text-xs">
+                          <span className="text-gray-500 font-mono">APIs:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES].apis.map((api: string, idx: number) => (
+                              <span 
+                                key={idx} 
+                                className="px-1.5 py-0.5 bg-neon-green/10 border border-neon-green/30 rounded text-neon-green font-mono hover:bg-neon-green/20 transition-colors"
+                                title={AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES].apiEndpoints?.[api] || api}
+                              >
+                                ⚡ {api}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center gap-4 text-xs font-mono flex-wrap">
                         <div className="flex items-center gap-1">
                           <Shield className="w-3 h-3 text-neon-green" />
