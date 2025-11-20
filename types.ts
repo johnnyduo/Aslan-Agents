@@ -23,7 +23,7 @@ export interface AgentMetadata {
   trustScore: number;
   walletAddress: string;
   spriteSeed: string;
-  hfPrompt: string; // The prompt used to generate the sprite (conceptual)
+  avatar: string; // Path to local animated sprite
   status: 'idle' | 'negotiating' | 'streaming' | 'offline';
   personality?: AgentPersonality;
 }

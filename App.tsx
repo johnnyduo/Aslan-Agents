@@ -141,6 +141,8 @@ const App: React.FC = () => {
     localStorage.setItem('captainFundHBAR', captainFundHBAR.toString());
   }, [captainFundHBAR]);
 
+ // Run once on mount
+
   // Debug: Log hook values whenever they change
   useEffect(() => {
     if (hash || mintSuccess) {

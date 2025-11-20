@@ -20,7 +20,7 @@ import { agentStatusManager } from '../services/api';
 // --- Custom Agent Node Component (defined outside to prevent re-creation) ---
 const AgentNode = React.memo(({ data }: NodeProps) => {
   const { agent, dialogue, onCloseDialogue } = data;
-  const spriteUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.spriteSeed}&backgroundColor=transparent`;
+  const spriteUrl = agent.avatar;
 
   return (
     <div className={`

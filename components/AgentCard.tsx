@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AgentMetadata } from '../types';
-import { Activity, Shield, Cpu, Hash, ExternalLink, Lock } from 'lucide-react';
+import { Activity, Shield, Cpu, Hash, ExternalLink, Lock, Loader2 } from 'lucide-react';
 
 interface AgentCardProps {
   agent: AgentMetadata;
@@ -14,14 +14,16 @@ interface AgentCardProps {
   isOnChain?: boolean;
   customOrder?: string;
   onCustomOrderChange?: (order: string) => void;
+  generatedSprite?: string;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick, status, isAutoMode, isMinting, isDeactivating, isOnChain, customOrder, onCustomOrderChange }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick, status, isAutoMode, isMinting, isDeactivating, isOnChain, customOrder, onCustomOrderChange, generatedSprite }) => {
   const isLocked = isAutoMode && agent.id !== 'a0'; // Lock all except Commander in auto mode
   const isCommander = agent.id === 'a0';
+  const [spriteLoaded, setSpriteLoaded] = useState(false);
   
-  // Pixel art placeholder
-  const spriteUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.spriteSeed}&backgroundColor=transparent`;
+  // Use local animated avatar
+  const spriteUrl = agent.avatar;
   const currentStatus = status || agent.status;
   
   // Determine button text
@@ -81,8 +83,9 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClic
             <img 
               src={spriteUrl} 
               alt={agent.name} 
-              className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] transition-transform group-hover:scale-110 duration-300"
+              className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] transition-all group-hover:scale-110 duration-300"
               style={{ imageRendering: 'pixelated' }}
+              onLoad={() => setSpriteLoaded(true)}
             />
         </div>
 
