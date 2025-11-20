@@ -4,6 +4,9 @@ import X402StreamingABI from '../contracts/abis/X402Streaming.json';
 import { USDC_ADDRESS, X402_STREAMING_ADDRESS } from '../config/walletConfig';
 import { useState, useEffect } from 'react';
 
+// Export for use in other components
+export { X402_STREAMING_ADDRESS, X402StreamingABI, USDC_ADDRESS };
+
 // ERC20 ABI for approve and allowance
 const ERC20_ABI = [
   {
@@ -347,7 +350,8 @@ export const useX402WithdrawableBalance = (streamId: number | null) => {
     functionName: 'getStreamData',
     args: streamId !== null && streamId > 0 ? [BigInt(streamId)] : undefined,
     query: {
-      enabled: streamId !== null && streamId > 0
+      enabled: streamId !== null && streamId > 0,
+      refetchInterval: 3000 // Refresh every 3 seconds to update stream status
     }
   });
 

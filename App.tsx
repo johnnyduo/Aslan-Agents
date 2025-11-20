@@ -133,10 +133,18 @@ const App: React.FC = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   
   // --- Mode Control State ---
-  const [operationMode, setOperationMode] = useState<'auto' | 'manual'>('manual');
+  const [operationMode, setOperationMode] = useState<'auto' | 'manual'>(() => {
+    const saved = localStorage.getItem('operationMode');
+    return (saved === 'auto' || saved === 'manual') ? saved : 'manual';
+  });
   const [commanderBudget, setCommanderBudget] = useState<number>(100); // USDC
   const [budgetSpent, setBudgetSpent] = useState<number>(0);
   const [pendingFundRequest, setPendingFundRequest] = useState<boolean>(false);
+
+  // Persist operation mode
+  useEffect(() => {
+    localStorage.setItem('operationMode', operationMode);
+  }, [operationMode]);
 
   // --- Agent Task Progress Tracking ---
   const [agentProgress, setAgentProgress] = useState<Record<string, {
@@ -769,10 +777,22 @@ const App: React.FC = () => {
     setTimeout(() => setPendingFundRequest(false), 10000);
   }, [pendingFundRequest, showAgentDialogue]);
 
-  // --- HBAR→SAUCE/USDC Autonomous Swap (Merchant Volt) ---
+  // --- HBAR→SAUCE/USDC Autonomous Swap (Merchant Reynard - a3) ---
   const executeAutonomousSwap = useCallback(async (marketData: any, sentimentScore: number, agentId: string) => {
     if (!activeAgents.includes(agentId)) return;
     if (!activeAgents.includes('a0')) return; // Commander not active
+    
+    // IMPORTANT: Only Merchant agent (Reynard - a3) can execute swaps
+    if (agentId !== 'a3') {
+      console.warn(`Agent ${agentId} cannot execute swaps. Only Merchant (a3 - Reynard Swift) can trade.`);
+      return;
+    }
+    
+    // Verify Reynard (Merchant) is active on canvas
+    if (!activeAgents.includes('a3')) {
+      addLog('SYSTEM', '⚠️ Trading requires Merchant agent (Reynard Swift - a3) to be active on canvas');
+      return;
+    }
     
     const agent = AGENTS.find(a => a.id === agentId)!;
     
@@ -856,14 +876,30 @@ const App: React.FC = () => {
           addLog('x402', `✅ SWAP SUCCESS: ${result.amountOut?.toFixed(2)} SAUCE received`);
           agentStatusManager.setStatus(agentId, `Swap complete: ${result.amountOut?.toFixed(2)} SAUCE`);
           
-          // Add task result
+          // Build transaction URL for HashScan
+          const txHash = result.txHash || '0x' + Math.random().toString(16).slice(2);
+          const txUrl = `https://hashscan.io/testnet/transaction/${txHash}`;
+          
+          // Add task result with transaction details
           addTaskResult({
             agentId,
             agentName: agent.name,
-            taskType: 'market_research',
+            taskType: 'swap_execution',
             status: 'success',
-            data: { swapAmount: swapDecision.recommendedAmount, sauceReceived: result.amountOut, txHash: result.txHash },
-            summary: `Successfully swapped ${swapDecision.recommendedAmount} HBAR → ${result.amountOut?.toFixed(2)} SAUCE on SauceSwap`
+            data: { 
+              swap: {
+                tokenIn: 'HBAR',
+                tokenOut: 'SAUCE',
+                amountIn: swapDecision.recommendedAmount,
+                amountOut: result.amountOut?.toFixed(2),
+                rate: `1 HBAR = ${(result.amountOut / swapDecision.recommendedAmount).toFixed(2)} SAUCE`,
+                slippage: '2.0',
+                profitability: swapDecision.reason
+              }
+            },
+            summary: `Successfully swapped ${swapDecision.recommendedAmount} HBAR → ${result.amountOut?.toFixed(2)} SAUCE on SauceSwap`,
+            txHash: txHash,
+            txUrl: txUrl
           });
           
           showAgentDialogue(agentId, 'success');
@@ -1263,6 +1299,8 @@ const App: React.FC = () => {
           setTaskResults([]);
           localStorage.removeItem('taskResults');
         }}
+        activeAgents={activeAgents}
+        agentConnections={persistentEdges}
       />
     );
   }

@@ -1,30 +1,97 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, BarChart3, Zap, DollarSign } from 'lucide-react';
+import { Layers, BarChart3, TrendingUp } from 'lucide-react';
 import { WalletConnect } from './WalletConnect';
-import { apiUtils } from '../services/api';
 import { useAccount } from 'wagmi';
+import { formatUnits } from 'viem';
+import { useX402WithdrawableBalance } from '../hooks/useX402Deposit';
 
 interface WalletBarProps {
   onViewResults?: () => void;
 }
 
+// Component to track a single stream's rate
+const StreamRateTracker: React.FC<{
+  streamId: number;
+  onRateUpdate: (id: number, rate: bigint, closed: boolean) => void;
+}> = ({ streamId, onRateUpdate }) => {
+  const { streamData } = useX402WithdrawableBalance(streamId);
+
+  useEffect(() => {
+    if (streamData && Array.isArray(streamData)) {
+      const ratePerSecond = streamData[3] ? BigInt(streamData[3]) : 0n;
+      const isClosed = streamData[8] ? Boolean(streamData[8]) : true;
+      onRateUpdate(streamId, ratePerSecond, isClosed);
+    }
+  }, [streamData, streamId, onRateUpdate]);
+
+  return null;
+};
+
 const WalletBar: React.FC<WalletBarProps> = ({ 
   onViewResults
 }) => {
-  const [geminiRemaining, setGeminiRemaining] = useState(10);
   const { isConnected } = useAccount();
+  const [totalStreamRate, setTotalStreamRate] = useState('0.000000');
+  const [streamIds, setStreamIds] = useState<number[]>([]);
+  const [streamRates, setStreamRates] = useState<Map<number, { rate: bigint, closed: boolean }>>(new Map());
 
-  // Update rate limit status every 5 seconds
+  // Load stream IDs from localStorage
   useEffect(() => {
-    const updateStatus = () => {
-      const status = apiUtils.getRateLimitStatus();
-      setGeminiRemaining(status.gemini.remaining);
+    const loadStreams = () => {
+      const stored = localStorage.getItem('userStreams');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          // Filter to only valid, reasonable stream IDs (< 1 million)
+          const ids = Array.isArray(parsed) 
+            ? parsed
+                .map((id: string) => Number(id))
+                .filter((id: number) => !isNaN(id) && id > 0 && id < 1000000 && Number.isFinite(id))
+            : [];
+          
+          // Clean up localStorage if we found invalid IDs
+          if (ids.length !== parsed.length) {
+            console.log('Cleaning invalid stream IDs from localStorage');
+            localStorage.setItem('userStreams', JSON.stringify(ids.map(String)));
+          }
+          
+          setStreamIds(ids);
+          console.log('Loaded stream IDs for aggregation:', ids);
+        } catch (err) {
+          console.error('Error loading streams:', err);
+        }
+      }
     };
 
-    updateStatus();
-    const interval = setInterval(updateStatus, 5000);
+    loadStreams();
+    const interval = setInterval(loadStreams, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  // Callback to update individual stream rates
+  const handleRateUpdate = (id: number, rate: bigint, closed: boolean) => {
+    setStreamRates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(id, { rate, closed });
+      return newMap;
+    });
+  };
+
+  // Calculate total from fetched rates
+  useEffect(() => {
+    let totalRate = 0n;
+    
+    streamRates.forEach(({ rate, closed }) => {
+      if (!closed && rate > 0n) {
+        totalRate += rate;
+      }
+    });
+
+    const formatted = formatUnits(totalRate, 6);
+    const displayRate = parseFloat(formatted).toFixed(6);
+    console.log('Total stream rate:', displayRate, 'USDC/s from', streamRates.size, 'streams');
+    setTotalStreamRate(displayRate);
+  }, [streamRates]);
   return (
     <div className="h-12 bg-black/80 backdrop-blur-md border-b border-white/10 flex items-center px-6 justify-between z-50 sticky top-0">
         <div className="flex items-center gap-4">
@@ -34,40 +101,21 @@ const WalletBar: React.FC<WalletBarProps> = ({
         </div>
 
         <div className="flex items-center gap-4 font-mono text-xs">
-            <div className="flex items-center gap-2 bg-neon-green/10 px-3 py-1 rounded border border-neon-green/30">
-                <span className="text-neon-green/70">x402 STREAM:</span>
-                <span className="text-neon-green font-bold animate-pulse">0.00042 ETH/s</span>
-            </div>
-
-            {/* AI Quota Status */}
-            <div className={`flex items-center gap-2 px-3 py-1 rounded border ${
-              geminiRemaining > 5 
-                ? 'bg-green-500/10 border-green-500/30' 
-                : geminiRemaining > 2 
-                  ? 'bg-yellow-500/10 border-yellow-500/30'
-                  : 'bg-red-500/10 border-red-500/30'
+            {/* Invisible stream rate trackers */}
+            {streamIds.map(id => (
+              <StreamRateTracker key={id} streamId={id} onRateUpdate={handleRateUpdate} />
+            ))}
+            
+            <div className={`flex items-center gap-2 px-3 py-1 rounded border transition-all ${
+              parseFloat(totalStreamRate) > 0
+                ? 'bg-neon-green/10 border-neon-green/30'
+                : 'bg-gray-500/10 border-gray-500/30'
             }`}>
-                <Zap size={12} className={
-                  geminiRemaining > 5 
-                    ? 'text-green-500' 
-                    : geminiRemaining > 2 
-                      ? 'text-yellow-500'
-                      : 'text-red-500'
-                } />
-                <span className={
-                  geminiRemaining > 5 
-                    ? 'text-green-500/70' 
-                    : geminiRemaining > 2 
-                      ? 'text-yellow-500/70'
-                      : 'text-red-500/70'
-                }>AI QUOTA:</span>
+                <TrendingUp size={12} className={parseFloat(totalStreamRate) > 0 ? 'text-neon-green' : 'text-gray-500'} />
+                <span className={parseFloat(totalStreamRate) > 0 ? 'text-neon-green/70' : 'text-gray-500/70'}>x402 STREAM:</span>
                 <span className={`font-bold ${
-                  geminiRemaining > 5 
-                    ? 'text-green-500' 
-                    : geminiRemaining > 2 
-                      ? 'text-yellow-500'
-                      : 'text-red-500'
-                }`}>{geminiRemaining}/10</span>
+                  parseFloat(totalStreamRate) > 0 ? 'text-neon-green' : 'text-gray-500'
+                }`}>{totalStreamRate} USDC/s</span>
             </div>
 
             {onViewResults && (

@@ -11,7 +11,7 @@ const AgentDetailPanel: React.FC<AgentDetailPanelProps> = ({ agent, onClose }) =
   if (!agent) return null;
 
   return (
-    <div className="absolute right-0 top-10 bottom-0 w-96 bg-black/95 border-l border-neon-green/30 backdrop-blur-xl shadow-2xl z-40 transform transition-transform duration-300 flex flex-col">
+    <div className="absolute right-0 top-10 bottom-0 w-96 bg-black/95 border-l border-neon-green/30 backdrop-blur-xl shadow-2xl z-[60] transform transition-transform duration-300 flex flex-col">
       <div className="p-4 border-b border-white/10 flex items-center justify-between bg-neon-green/5">
         <h2 className="text-neon-green font-bold font-mono flex items-center gap-2">
           <span className="text-xs bg-neon-green text-black px-1 rounded">EIP-8004</span>
@@ -26,10 +26,11 @@ const AgentDetailPanel: React.FC<AgentDetailPanelProps> = ({ agent, onClose }) =
         {/* Avatar Header */}
         <div className="flex flex-col items-center mb-6">
            <div className="w-32 h-32 border border-white/20 rounded-lg p-2 bg-black relative overflow-hidden group">
-             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-50"></div>
+             <div className="absolute inset-0 bg-neon-green/20 blur-xl opacity-50"></div>
              <img 
-                src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.spriteSeed}`} 
-                className="w-full h-full object-contain image-pixelated relative z-10"
+                src={agent.avatar} 
+                className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"
+                style={{ imageRendering: 'pixelated' }}
                 alt={agent.name}
              />
              <div className="absolute bottom-0 left-0 right-0 bg-neon-green/20 h-1/3 blur-xl"></div>

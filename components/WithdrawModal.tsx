@@ -34,7 +34,21 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          setUserStreams(Array.isArray(parsed) ? parsed.reverse() : []); // Newest first
+          // Filter valid stream IDs and clean up scientific notation
+          const validStreams = Array.isArray(parsed) 
+            ? parsed.filter((id: string) => {
+                const num = Number(id);
+                return !isNaN(num) && num > 0 && num < 1000000 && Number.isFinite(num);
+              })
+            : [];
+          
+          // Clean localStorage if needed
+          if (validStreams.length !== parsed.length) {
+            console.log('Cleaned invalid stream IDs from localStorage');
+            localStorage.setItem('userStreams', JSON.stringify(validStreams));
+          }
+          
+          setUserStreams(validStreams.reverse()); // Newest first
         } catch (err) {
           console.error('Error loading streams:', err);
         }

@@ -171,6 +171,66 @@ export const AGENTS: AgentMetadata[] = [
   }
 ];
 
+// Detailed agent abilities and API configurations
+export const AGENT_ABILITIES = {
+  'a0': { // Aslan the Great - Commander
+    primary: 'Strategic Coordination',
+    apis: [],
+    operations: ['Agent orchestration', 'Decision making', 'Risk assessment', 'Resource allocation'],
+    canExecute: ['coordinate_agents', 'approve_operations', 'strategic_planning']
+  },
+  'a1': { // Eagleton Skywatcher - Navigator
+    primary: 'Market Intelligence',
+    apis: ['CoinGecko API'],
+    operations: ['Real-time price tracking', 'Volume analysis', 'Market cap monitoring', 'Token comparison'],
+    canExecute: ['market_research', 'price_analysis', 'volume_tracking'],
+    taskType: 'market_research',
+    dataSource: 'https://api.coingecko.com'
+  },
+  'a2': { // Athena Nightwing - Archivist
+    primary: 'Sentiment Analysis',
+    apis: ['News API', 'CryptoNews API'],
+    operations: ['News aggregation', 'Sentiment scoring', 'Event detection', 'Trend analysis'],
+    canExecute: ['sentiment_analysis', 'news_monitoring', 'social_signals'],
+    taskType: 'sentiment_analysis',
+    dataSource: 'Multiple news sources'
+  },
+  'a3': { // Reynard Swift - Merchant
+    primary: 'DEX Trading',
+    apis: ['SauceSwap API'],
+    operations: ['HBAR/SAUCE swaps', 'Liquidity analysis', 'Price impact calculation', 'Slippage protection'],
+    canExecute: ['swap_execution', 'dex_trading', 'liquidity_check'],
+    taskType: 'swap_execution',
+    dataSource: 'testnet.sauceswap.finance',
+    tradingPairs: ['HBAR/SAUCE'],
+    maxTradeSize: '0.05 HBAR',
+    network: 'Hedera Testnet',
+    explorer: 'https://hashscan.io/testnet'
+  },
+  'a4': { // Ursus Guardian - Sentinel
+    primary: 'Risk Management',
+    apis: [],
+    operations: ['Volatility calculation', 'Position sizing', 'Stop-loss management', 'Black swan detection'],
+    canExecute: ['risk_analysis', 'volatility_tracking', 'portfolio_protection'],
+    taskType: 'security_audit'
+  },
+  'a5': { // Luna Mysticfang - Oracle
+    primary: 'Technical Analysis',
+    apis: ['Gemini AI', 'TradingView'],
+    operations: ['Chart pattern recognition', 'Trend prediction', 'Support/resistance levels', 'AI-powered forecasting'],
+    canExecute: ['price_prediction', 'technical_analysis', 'pattern_recognition'],
+    taskType: 'price_prediction',
+    dataSource: 'Gemini AI + Market data'
+  },
+  'a6': { // Corvus Messenger - Glitch
+    primary: 'News Monitoring',
+    apis: ['News API', 'Twitter API', 'Whale Alert'],
+    operations: ['Breaking news detection', 'Whale movement tracking', 'Event correlation', 'Real-time alerts'],
+    canExecute: ['news_monitoring', 'alert_system', 'whale_tracking'],
+    taskType: 'sentiment_analysis'
+  }
+};
+
 export const INITIAL_LOGS: any[] = [
   { id: 'sys-1', timestamp: '10:00:00', type: 'SYSTEM', content: 'SpriteOps Grid Initialized. EIP-8004 Registry Loaded.' },
   { id: 'sys-2', timestamp: '10:00:01', type: 'SYSTEM', content: 'x402 Payment Engine Ready.' },

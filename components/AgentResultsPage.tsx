@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
 import { AgentTaskResult, AgentMetadata } from '../types';
 import { TrendingUp, TrendingDown, Shield, Search, Target, Zap, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, Activity, Server, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { AGENT_ABILITIES } from '../constants';
 
 interface AgentResultsPageProps {
   agents: AgentMetadata[];
   results: AgentTaskResult[];
   onBack: () => void;
   onClearResults?: () => void;
+  activeAgents?: string[]; // IDs of currently active agents on canvas
+  agentConnections?: Array<{source: string, target: string}>; // Canvas connections
 }
 
-export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, results, onBack, onClearResults }) => {
+export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ 
+  agents, 
+  results, 
+  onBack, 
+  onClearResults,
+  activeAgents = [],
+  agentConnections = []
+}) => {
   const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set());
 
   const toggleResult = (index: number) => {
@@ -32,6 +42,7 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
       case 'price_prediction': return <Target className="w-5 h-5" />;
       case 'arbitrage_scan': return <Zap className="w-5 h-5" />;
       case 'route_optimization': return <TrendingDown className="w-5 h-5" />;
+      case 'swap_execution': return <DollarSign className="w-5 h-5" />;
     }
   };
 
@@ -43,6 +54,8 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
       case 'price_prediction': return 'Price Prediction';
       case 'arbitrage_scan': return 'Arbitrage Scanner';
       case 'route_optimization': return 'Route Optimization';
+      case 'swap_execution': return 'DEX Swap Execution';
+      case 'custom_order': return 'Custom Order';
     }
   };
 
@@ -96,6 +109,30 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
     return agents.find(a => a.id === agentId);
   };
 
+  // Get agent's primary task specialization from config
+  const getAgentSpecialization = (agent: any) => {
+    const ability = AGENT_ABILITIES[agent.id as keyof typeof AGENT_ABILITIES];
+    if (ability) {
+      const apis = ability.apis.length > 0 ? ` (${ability.apis.join(', ')})` : '';
+      return `${ability.primary}${apis}`;
+    }
+    return agent.description;
+  };
+
+  // Get agent's operations list
+  const getAgentOperations = (agentId: string) => {
+    const ability = AGENT_ABILITIES[agentId as keyof typeof AGENT_ABILITIES];
+    return ability?.operations || [];
+  };
+
+  // Determine who ordered this task (Captain or upstream agent)
+  const getTaskOrderSource = (agentId: string) => {
+    const incoming = agentConnections.filter(c => c.target === agentId);
+    if (incoming.length === 0) return null;
+    const sourceAgent = agents.find(a => a.id === incoming[0].source);
+    return sourceAgent;
+  };
+
   const calculateMetrics = (agentResults: AgentTaskResult[]) => {
     const successCount = agentResults.filter(r => r.status === 'success').length;
     const estimatedCost = agentResults.length * 0.001; // Estimate $0.001 per task
@@ -109,14 +146,42 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
     };
   };
 
+  // Filter results to only show active agents
+  const activeResults = activeAgents.length > 0 
+    ? results.filter(r => activeAgents.includes(r.agentId))
+    : results;
+
   // Group results by agent
-  const resultsByAgent = results.reduce((acc, result) => {
+  const resultsByAgent = activeResults.reduce((acc, result) => {
     if (!acc[result.agentId]) {
       acc[result.agentId] = [];
     }
     acc[result.agentId].push(result);
     return acc;
   }, {} as Record<string, AgentTaskResult[]>);
+
+  // Determine if agent is Captain
+  const isCaptain = (agentId: string) => agentId === 'a0';
+
+  // Get agents connected to this agent
+  const getConnectedAgents = (agentId: string) => {
+    const outgoing = agentConnections
+      .filter(c => c.source === agentId)
+      .map(c => agents.find(a => a.id === c.target))
+      .filter(Boolean);
+    const incoming = agentConnections
+      .filter(c => c.target === agentId)
+      .map(c => agents.find(a => a.id === c.source))
+      .filter(Boolean);
+    return { outgoing, incoming };
+  };
+
+  // Sort agents: Captain first, then by activity
+  const sortedAgentIds = Object.keys(resultsByAgent).sort((a, b) => {
+    if (a === 'a0') return -1;
+    if (b === 'a0') return 1;
+    return resultsByAgent[b].length - resultsByAgent[a].length;
+  });
 
   // Parse and format data based on task type
   const renderTaskData = (result: AgentTaskResult, isExpanded: boolean) => {
@@ -226,6 +291,80 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
         );
       }
 
+      // Swap Execution - DEX Trading on SauceSwap
+      if (result.taskType === 'swap_execution' && data.swap) {
+        return (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-4">
+                <div className="text-xs text-gray-400 mb-1 font-mono">SWAP DETAILS</div>
+                <div className="text-sm font-bold text-purple-400 font-mono">
+                  {data.swap.amountIn} {data.swap.tokenIn} → {data.swap.amountOut} {data.swap.tokenOut}
+                </div>
+                <div className="text-xs text-gray-500 mt-1 font-mono">testnet.sauceswap.finance</div>
+              </div>
+              <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                <div className="text-xs text-gray-400 mb-1 font-mono">EXECUTION RATE</div>
+                <div className="text-lg font-bold text-white font-mono">{data.swap.rate || 'N/A'}</div>
+                <div className="text-xs text-gray-500 mt-1 font-mono">
+                  Slippage: {data.swap.slippage || '0.5'}%
+                </div>
+              </div>
+            </div>
+
+            {data.swap.profitability && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-green-400 mb-1 font-mono">PROFITABILITY SIGNAL</div>
+                    <div className="text-sm text-white font-mono">{data.swap.profitability}</div>
+                  </div>
+                  <TrendingUp className="w-6 h-6 text-green-400" />
+                </div>
+              </div>
+            )}
+
+            {result.txHash && result.txUrl && (
+              <div className="bg-neon-green/10 border border-neon-green/30 rounded-lg p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 text-xs text-neon-green font-mono mb-1">
+                      <Server className="w-3 h-3" />
+                      <span>ON-CHAIN TRANSACTION</span>
+                    </div>
+                    <div className="text-xs text-gray-400 font-mono break-all">
+                      TX: {result.txHash}
+                    </div>
+                  </div>
+                  <a 
+                    href={result.txUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-neon-green/20 hover:bg-neon-green/30 border border-neon-green/50 rounded text-neon-green text-xs font-mono transition-all"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    HashScan
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-xs text-purple-400 font-mono mb-1">
+                <DollarSign className="w-3 h-3" />
+                <span>TRADE LIMITS & REQUIREMENTS</span>
+              </div>
+              <div className="text-xs text-gray-400 mb-2">
+                Max per trade: 0.05 HBAR • Network: Hedera Testnet • Auto-execution enabled
+              </div>
+              <div className="text-xs text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 rounded px-2 py-1">
+                ⚠️ Trading operations require Merchant agent (Reynard Swift - a3) to be active on canvas
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       // Default: show formatted JSON for other types
       return (
         <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
@@ -246,8 +385,8 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
   };
 
   return (
-    <div className="fixed inset-0 bg-[#050505] text-white overflow-y-auto">
-      <div className="min-h-screen p-6">
+    <div className="fixed inset-0 bg-[#050505] text-white overflow-hidden flex flex-col">
+      <div className="flex-shrink-0 p-6 bg-[#050505] border-b border-white/10">
         {/* Header */}
         <div className="max-w-7xl mx-auto mb-8">
           <button
@@ -260,12 +399,22 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-neon-green mb-2 font-mono">AGENT OPERATIONS REPORT</h1>
-              <p className="text-gray-400 font-mono text-sm">Real-time intelligence from autonomous agents</p>
+              <p className="text-gray-400 font-mono text-sm">
+                {activeAgents.length > 0 
+                  ? `Monitoring ${activeAgents.length} active agent${activeAgents.length > 1 ? 's' : ''} on canvas`
+                  : 'Real-time intelligence from autonomous agents'}
+              </p>
             </div>
             <div className="text-right flex flex-col gap-3">
-              <div>
-                <div className="text-xs text-gray-500 font-mono">TOTAL OPERATIONS</div>
-                <div className="text-3xl font-bold text-white font-mono">{results.length}</div>
+              <div className="grid grid-cols-2 gap-4 text-right">
+                <div>
+                  <div className="text-xs text-gray-500 font-mono">ACTIVE AGENTS</div>
+                  <div className="text-2xl font-bold text-neon-green font-mono">{activeAgents.length}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 font-mono">OPERATIONS</div>
+                  <div className="text-2xl font-bold text-white font-mono">{activeResults.length}</div>
+                </div>
               </div>
               {onClearResults && results.length > 0 && (
                 <button
@@ -282,37 +431,78 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Results Grid */}
-        <div className="max-w-7xl mx-auto space-y-6 pb-8">
-        {Object.entries(resultsByAgent).map(([agentId, agentResults]: [string, AgentTaskResult[]]) => {
+      {/* Scrollable Results Grid */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto space-y-6 p-6 pb-8">
+        {sortedAgentIds.map((agentId) => {
+          const agentResults = resultsByAgent[agentId];
           const agent = getAgentById(agentId);
           if (!agent) return null;
           
           const metrics = calculateMetrics(agentResults);
-          const spriteUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${agent.spriteSeed}&backgroundColor=transparent`;
+          // Use local animated avatar (same as AgentCard)
+          const spriteUrl = agent.avatar;
+          const connections = getConnectedAgents(agentId);
+          const isAgentCaptain = isCaptain(agentId);
 
           return (
-            <div key={agentId} className="bg-black/60 backdrop-blur-sm border border-neon-green/30 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(67,255,77,0.1)]">
+            <div key={agentId} className={`bg-black/60 backdrop-blur-sm border rounded-xl overflow-hidden ${
+              isAgentCaptain 
+                ? 'border-yellow-500/50 shadow-[0_0_25px_rgba(234,179,8,0.15)]'
+                : 'border-neon-green/30 shadow-[0_0_20px_rgba(67,255,77,0.1)]'
+            }`}>
               {/* Agent Header */}
-              <div className="bg-gradient-to-r from-neon-green/10 to-transparent border-b border-neon-green/20 p-6">
+              <div className={`bg-gradient-to-r border-b p-6 ${
+                isAgentCaptain
+                  ? 'from-yellow-500/10 to-transparent border-yellow-500/20'
+                  : 'from-neon-green/10 to-transparent border-neon-green/20'
+              }`}>
                 <div className="flex items-start justify-between gap-6">
                   <div className="flex items-start gap-4 flex-1">
-                    <img 
-                      src={spriteUrl} 
-                      alt={agent.name} 
-                      className="w-16 h-16 rounded-lg border-2 border-neon-green/50"
-                      style={{ imageRendering: 'pixelated' }}
-                    />
+                    <div className={`w-16 h-16 rounded-lg border-2 overflow-hidden ${
+                        isAgentCaptain ? 'border-yellow-500/50' : 'border-neon-green/50'
+                      }`}>
+                      <img 
+                        src={spriteUrl} 
+                        alt={agent.name} 
+                        className="w-full h-full object-cover"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-2xl font-bold text-neon-green font-mono">{agent.name}</h2>
-                        <span className="px-2 py-1 bg-neon-green/20 border border-neon-green/50 rounded text-neon-green text-xs font-mono">
-                          ⛓️ ON-CHAIN
-                        </span>
+                        <h2 className={`text-2xl font-bold font-mono ${
+                          isAgentCaptain ? 'text-yellow-500' : 'text-neon-green'
+                        }`}>
+                          {agent.name}
+                        </h2>
+                        {isAgentCaptain ? (
+                          <span className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/50 rounded text-yellow-500 text-xs font-mono">
+                            👑 CAPTAIN
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 bg-neon-green/20 border border-neon-green/50 rounded text-neon-green text-xs font-mono">
+                            ⛓️ ON-CHAIN
+                          </span>
+                        )}
                       </div>
-                      <p className="text-gray-400 text-sm mb-3">{agent.role}</p>
-                      <div className="flex items-center gap-4 text-xs font-mono">
+                      <p className="text-gray-400 text-sm mb-1 font-bold">{agent.role}</p>
+                      <p className="text-gray-500 text-xs mb-2 font-mono">{getAgentSpecialization(agent)}</p>
+                      {getAgentOperations(agent.id).length > 0 && (
+                        <div className="flex items-start gap-2 mb-3 text-xs">
+                          <span className="text-gray-500 font-mono">OPERATIONS:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {getAgentOperations(agent.id).map((op, idx) => (
+                              <span key={idx} className="px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-gray-400 font-mono">
+                                {op}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-4 text-xs font-mono flex-wrap">
                         <div className="flex items-center gap-1">
                           <Shield className="w-3 h-3 text-neon-green" />
                           <span className="text-gray-500">TS:</span>
@@ -322,6 +512,76 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
                           <span className="text-gray-500">TOKEN:</span>
                           <span className="text-white">#{agent.tokenId}</span>
                         </div>
+                        {connections.incoming.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-500">←</span>
+                            <span className="text-blue-400">{connections.incoming.length} upstream</span>
+                          </div>
+                        )}
+                        {connections.outgoing.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-500">→</span>
+                            <span className="text-purple-400">{connections.outgoing.length} downstream</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Show task order source and connections */}
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        {!isAgentCaptain && connections.incoming.length > 0 && (
+                          <div className="mb-3 bg-blue-500/10 border border-blue-500/30 rounded p-2">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-blue-400 font-mono font-bold">📋 RECEIVES ORDERS FROM:</span>
+                              {connections.incoming.map((conn: any, idx: number) => (
+                                <span key={idx} className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/50 rounded text-blue-400 font-mono">
+                                  {conn.name} {conn.id === 'a0' ? '👑' : ''}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1 font-mono">
+                              Executing specialized tasks based on {agent.name}'s expertise
+                            </div>
+                          </div>
+                        )}
+                        {isAgentCaptain && connections.outgoing.length > 0 && (
+                          <div className="mb-3 bg-yellow-500/10 border border-yellow-500/30 rounded p-2">
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-yellow-400 font-mono font-bold">⚡ COMMANDING AGENTS:</span>
+                              {connections.outgoing.map((conn: any, idx: number) => (
+                                <span key={idx} className="px-2 py-0.5 bg-purple-500/20 border border-purple-500/50 rounded text-purple-400 font-mono">
+                                  {conn.name}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1 font-mono">
+                              Orchestrating operations and coordinating agent activities
+                            </div>
+                          </div>
+                        )}
+                        {(connections.incoming.length > 0 || connections.outgoing.length > 0) && (
+                          <div className="flex items-center gap-4 text-xs flex-wrap">
+                            {connections.incoming.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 font-mono">RECEIVES FROM:</span>
+                                {connections.incoming.map((conn: any, idx: number) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/50 rounded text-blue-400 font-mono">
+                                    {conn.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {connections.outgoing.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500 font-mono">SENDS TO:</span>
+                                {connections.outgoing.map((conn: any, idx: number) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-purple-500/20 border border-purple-500/50 rounded text-purple-400 font-mono">
+                                    {conn.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -361,7 +621,7 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
               </div>
 
               {/* Task Results */}
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto">
                 {agentResults.map((result, idx) => {
                   const isExpanded = expandedResults.has(idx);
                   const globalIdx = results.indexOf(result);
@@ -386,12 +646,37 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
                                 {getTaskName(result.taskType)}
                               </h3>
                               {getStatusBadge(result.status)}
+                              <span className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-400 text-xs font-mono">
+                                {agent.role}
+                              </span>
                             </div>
                             <p className="text-gray-400 text-xs">{result.summary}</p>
+                            <p className="text-gray-500 text-xs mt-1 italic">
+                              Specialized {agent.role} operation using {agent.capabilities?.[0] || 'core capabilities'}
+                            </p>
+                            {/* Transaction Link for on-chain operations */}
+                            {result.txUrl && (
+                              <a 
+                                href={result.txUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-neon-green hover:text-neon-green/80 mt-1 font-mono"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                View Transaction on HashScan
+                              </a>
+                            )}
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-4">
+                          {result.txHash && (
+                            <div className="flex items-center gap-1 text-xs bg-neon-green/10 px-2 py-1 rounded border border-neon-green/30">
+                              <span className="text-gray-500 font-mono">TX:</span>
+                              <span className="text-neon-green font-mono">{result.txHash.slice(0, 6)}...{result.txHash.slice(-4)}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 text-xs text-gray-500 font-mono">
                             <Clock className="w-3 h-3" />
                             {formatTimestamp(result.timestamp)}
@@ -418,11 +703,21 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({ agents, resu
           );
         })}
 
-        {Object.keys(resultsByAgent).length === 0 && (
+        {sortedAgentIds.length === 0 && activeAgents.length === 0 && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🤖</div>
+            <h2 className="text-2xl font-bold text-gray-400 mb-2 font-mono">NO AGENTS ACTIVE</h2>
+            <p className="text-gray-500 font-mono text-sm">Activate agents on the canvas to see their operations...</p>
+          </div>
+        )}
+        
+        {sortedAgentIds.length === 0 && activeAgents.length > 0 && (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">⏳</div>
             <h2 className="text-2xl font-bold text-gray-400 mb-2 font-mono">NO OPERATIONS YET</h2>
-            <p className="text-gray-500 font-mono text-sm">Agents will report their findings here...</p>
+            <p className="text-gray-500 font-mono text-sm">
+              {activeAgents.length} agent{activeAgents.length > 1 ? 's are' : ' is'} active. Waiting for task results...
+            </p>
           </div>
         )}
         </div>
