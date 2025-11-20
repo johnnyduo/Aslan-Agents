@@ -152,6 +152,24 @@ const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Save node positions when they change
+  React.useEffect(() => {
+    const positions: Record<string, { x: number; y: number }> = {};
+    nodes.forEach(node => {
+      if (node.position) {
+        positions[node.id] = { x: node.position.x, y: node.position.y };
+      }
+    });
+    
+    // Save to localStorage
+    localStorage.setItem('nodePositions', JSON.stringify(positions));
+    
+    // Call callback if provided
+    if (onNodePositionsChange) {
+      onNodePositionsChange(positions);
+    }
+  }, [nodes, onNodePositionsChange]);
+
   // Update nodes when activeAgents changes (add/remove agents)
   React.useEffect(() => {
     const savedPos = localStorage.getItem('nodePositions');

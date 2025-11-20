@@ -8,10 +8,11 @@ import ConsolePanel from './components/ConsolePanel';
 import AgentDetailPanel from './components/AgentDetailPanel';
 import { AgentDialogue } from './components/AgentDialogue';
 import { AgentResultsPage } from './components/AgentResultsPage';
-import { ModeControl } from './components/ModeControl';
 import { AgentProgressBar } from './components/AgentProgressBar';
-import { CaptainFundPanel } from './components/CaptainFundPanel';
 import { DepositModal } from './components/DepositModal';
+import { WithdrawModal } from './components/WithdrawModal';
+import { CaptainControlPanel } from './components/CaptainControlPanel';
+import { Wallet } from 'lucide-react';
 import { orchestrator, cryptoService, newsService, hederaService, agentStatusManager, sauceSwapService } from './services/api';
 import { testAPIs } from './testAPIs';
 import { useMintAgent, useDeactivateAgent } from './hooks/useAgentContract';
@@ -129,17 +130,12 @@ const App: React.FC = () => {
   const [showResultsPage, setShowResultsPage] = useState(false);
   const [agentPositions, setAgentPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   
   // --- Mode Control State ---
   const [operationMode, setOperationMode] = useState<'auto' | 'manual'>('manual');
   const [commanderBudget, setCommanderBudget] = useState<number>(100); // USDC
   const [budgetSpent, setBudgetSpent] = useState<number>(0);
-
-  // --- Captain Fund Management (HBAR for autonomous trading) ---
-  const [captainFundHBAR, setCaptainFundHBAR] = useState<number>(() => {
-    const saved = localStorage.getItem('captainFundHBAR');
-    return saved ? parseFloat(saved) : 0;
-  });
   const [pendingFundRequest, setPendingFundRequest] = useState<boolean>(false);
 
   // --- Agent Task Progress Tracking ---
@@ -163,11 +159,6 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('taskResults', JSON.stringify(taskResults));
   }, [taskResults]);
-
-  // --- Persist captain fund to localStorage ---
-  useEffect(() => {
-    localStorage.setItem('captainFundHBAR', captainFundHBAR.toString());
-  }, [captainFundHBAR]);
 
  // Run once on mount
 
@@ -794,7 +785,7 @@ const App: React.FC = () => {
     }
     
     // Check captain fund balance
-    if (captainFundHBAR < swapDecision.recommendedAmount) {
+    if (false) { // Fund check removed - using on-chain balance
       agentStatusManager.setStatus(agentId, '⚠️ Insufficient captain fund');
       requestFundFromCaptain();
       return;
@@ -831,7 +822,7 @@ const App: React.FC = () => {
     
     setTimeout(async () => {
       // Deduct from captain fund
-      setCaptainFundHBAR(prev => prev - swapDecision.recommendedAmount);
+      // Fund deduction removed - using on-chain balance
       addLog('x402', `💸 Deducted ${swapDecision.recommendedAmount} HBAR from Captain fund`);
       agentStatusManager.setStatus(agentId, `Executing swap: ${swapDecision.recommendedAmount} HBAR`);
       
@@ -878,7 +869,7 @@ const App: React.FC = () => {
           showAgentDialogue(agentId, 'success');
         } else {
           // Refund on failure
-          setCaptainFundHBAR(prev => prev + swapDecision.recommendedAmount);
+          // Fund addition removed - using on-chain balance
           throw new Error(result.error || 'Swap failed');
         }
       } catch (error: any) {
@@ -914,7 +905,7 @@ const App: React.FC = () => {
         setAgentStatuses(prev => ({ ...prev, a0: 'idle', [agentId]: 'idle' }));
       }
     }, 1500);
-  }, [activeAgents, addLog, addTaskResult, showAgentDialogue, captainFundHBAR, requestFundFromCaptain]);
+  }, [activeAgents, addLog, addTaskResult, showAgentDialogue, requestFundFromCaptain]);
 
   // --- API Integration: Fetch real-time data for agents ---
   const fetchAgentIntelligence = useCallback(async (agentId: string) => {
@@ -1280,7 +1271,6 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden font-sans selection:bg-neon-green selection:text-black">
       <WalletBar 
         onViewResults={() => setShowResultsPage(true)}
-        onOpenDeposit={() => setShowDepositModal(true)}
       />
       
       <div className="flex flex-1 overflow-hidden relative">
@@ -1304,6 +1294,7 @@ const App: React.FC = () => {
                 isMinting={mintingAgents.has(agent.id)}
                 isDeactivating={deactivatingAgents.has(agent.id)}
                 isOnChain={!!onChainAgents[agent.id]}
+                onChainTokenId={onChainAgents[agent.id] ? Number(onChainAgents[agent.id]) : undefined}
                 customOrder={agent.id === 'a0' ? commanderCustomOrder : undefined}
                 onCustomOrderChange={agent.id === 'a0' ? setCommanderCustomOrder : undefined}
               />
@@ -1313,45 +1304,16 @@ const App: React.FC = () => {
 
         {/* Center: Flow Canvas */}
         <div className="flex-1 relative flex flex-col">
-          {/* Top Right Controls: Mode + Captain Fund */}
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-            {/* Mode Control - Simple Toggle */}
-            <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-lg p-1">
-              <button
-                onClick={() => setOperationMode('manual')}
-                className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                  operationMode === 'manual' 
-                    ? 'bg-[#39ff14] text-black' 
-                    : 'bg-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                MANUAL
-              </button>
-              <button
-                onClick={() => setOperationMode('auto')}
-                className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                  operationMode === 'auto' 
-                    ? 'bg-[#39ff14] text-black' 
-                    : 'bg-transparent text-white/50 hover:text-white'
-                }`}
-              >
-                AUTO
-              </button>
-            </div>
-
-            {/* Captain Fund Panel */}
-            <CaptainFundPanel
-              currentBalance={captainFundHBAR}
-              onDeposit={(amount) => {
-                setCaptainFundHBAR(prev => prev + amount);
-                addLog('SYSTEM', `💰 Deposited ${amount} HBAR to Captain fund`);
-                toast.success(`Deposited ${amount} HBAR`, { autoClose: 2000 });
-              }}
-              onWithdraw={(amount) => {
-                setCaptainFundHBAR(prev => prev - amount);
-                addLog('SYSTEM', `💸 Withdrew ${amount} HBAR from Captain fund`);
-                toast.success(`Withdrew ${amount} HBAR`, { autoClose: 2000 });
-              }}
+          {/* Top Right Controls: Unified Captain Control Panel */}
+          <div className="absolute top-4 right-4 z-50">
+            <CaptainControlPanel
+              mode={operationMode}
+              onModeChange={setOperationMode}
+              isConnected={isConnected}
+              isCaptainRegistered={!!onChainAgents['a0']}
+              captainTokenId={onChainAgents['a0'] ? Number(onChainAgents['a0']) : 0}
+              onOpenDeposit={() => setShowDepositModal(true)}
+              onOpenWithdraw={() => setShowWithdrawModal(true)}
             />
           </div>
           
@@ -1403,7 +1365,7 @@ const App: React.FC = () => {
       
       {/* Toast Notifications */}
       <ToastContainer
-        position="top-right"
+        position="bottom-right"
         autoClose={5000}
         hideProgressBar={false}
         newestOnTop={true}
@@ -1414,7 +1376,8 @@ const App: React.FC = () => {
         pauseOnHover
         theme="dark"
         style={{
-          marginTop: '60px'
+          marginBottom: '20px',
+          marginRight: '20px'
         }}
       />
 
@@ -1423,9 +1386,42 @@ const App: React.FC = () => {
         isOpen={showDepositModal}
         onClose={() => setShowDepositModal(false)}
         captainAgentId={onChainAgents['a0'] ? Number(onChainAgents['a0']) : 0} // Aslan the Great (Commander)
+        connectedAgents={
+          persistentEdges
+            .filter(edge => edge.source === 'a0' || edge.target === 'a0')
+            .map(edge => {
+              const agentId = edge.source === 'a0' ? edge.target : edge.source;
+              return onChainAgents[agentId] ? { agentId, tokenId: onChainAgents[agentId] } : null;
+            })
+            .filter((item): item is {agentId: string, tokenId: bigint} => item !== null)
+        }
         onDepositSuccess={(streamId) => {
-          addLog('x402', `✅ Stream #${streamId} opened! Captain funded for autonomous operations.`);
+          if (streamId && streamId > 0) {
+            addLog('x402', `✅ Stream #${streamId} opened! Captain funded for autonomous operations. Use this ID to withdraw later.`);
+          } else {
+            addLog('x402', `✅ Stream opened! Captain funded for autonomous operations. Check transaction receipt for Stream ID.`);
+          }
           setShowDepositModal(false);
+        }}
+      />
+
+      {/* Withdraw Modal for x402 Stream Withdrawals */}
+      <WithdrawModal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        captainAgentId={onChainAgents['a0'] ? Number(onChainAgents['a0']) : 0} // Aslan the Great (Commander)
+        connectedAgents={
+          persistentEdges
+            .filter(edge => edge.source === 'a0' || edge.target === 'a0')
+            .map(edge => {
+              const agentId = edge.source === 'a0' ? edge.target : edge.source;
+              return onChainAgents[agentId] ? { agentId, tokenId: onChainAgents[agentId] } : null;
+            })
+            .filter((item): item is {agentId: string, tokenId: bigint} => item !== null)
+        }
+        onWithdrawSuccess={() => {
+          addLog('x402', `✅ Withdrawal successful! Funds transferred from stream.`);
+          setShowWithdrawModal(false);
         }}
       />
     </div>

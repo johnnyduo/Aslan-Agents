@@ -95,6 +95,8 @@ export const useX402Deposit = () => {
         functionName: 'approve',
         args: [X402_STREAMING_ADDRESS, amountWei]
       });
+      
+      // Approval transaction will be tracked via isApproveSuccess
     } catch (error) {
       console.error('Approve error:', error);
       setIsApproving(false);
@@ -110,21 +112,23 @@ export const useX402Deposit = () => {
       const { amount, asset, senderAgentId, receiverAgentId, ratePerSecond } = params;
 
       // Parse amounts based on asset type
-      const decimals = asset === 'USDC' ? 6 : 18;
+      // X402 contract only accepts ERC20 tokens (USDC uses 6 decimals)
+      const decimals = asset === 'USDC' ? 6 : 6; // Only USDC supported
       const spendingCap = parseUnits(amount, decimals);
       const rate = parseUnits(ratePerSecond, decimals);
 
-      // Get asset address
+      // Get asset address (must be ERC20, not zero address)
       const assetAddress = asset === 'USDC' 
         ? USDC_ADDRESS 
-        : '0x0000000000000000000000000000000000000000'; // Use zero address for native HBAR
+        : USDC_ADDRESS; // Fallback to USDC, X402 doesn't support native HBAR
 
       console.log('Opening x402 stream:', {
         senderAgentId,
         receiverAgentId,
         ratePerSecond: rate.toString(),
         spendingCap: spendingCap.toString(),
-        asset: assetAddress
+        asset: assetAddress,
+        note: 'ERC20 only - openStream is not payable'
       });
 
       // For USDC, check approval first
@@ -133,6 +137,9 @@ export const useX402Deposit = () => {
         // For now, user must approve first
       }
 
+      // Estimate reasonable gas for Hedera
+      const gasLimit = BigInt(800000); // ~0.8M gas units, typical for Hedera contract calls
+      
       await writeOpenStream({
         address: X402_STREAMING_ADDRESS,
         abi: X402StreamingABI.abi,
@@ -144,7 +151,8 @@ export const useX402Deposit = () => {
           spendingCap,
           assetAddress
         ],
-        value: asset === 'HBAR' ? spendingCap : BigInt(0) // Send HBAR if native token
+        // No value parameter - openStream is not payable, uses safeTransferFrom for ERC20
+        gas: gasLimit
       });
 
       return { success: true };
@@ -170,11 +178,12 @@ export const useX402Deposit = () => {
     isApproving: isApprovePending || isApproveConfirming,
     isDepositing: isStreamPending || isStreamConfirming,
     isSuccess: isStreamSuccess,
+    isApproveSuccess, // Add approval success flag
     approvalNeeded,
-    // Transaction hashes
+    // Transaction hashes and receipt
+    streamReceipt,
     approveHash,
     streamHash,
-    streamReceipt,
     // Errors
     error: approveError || streamError
   };
@@ -292,11 +301,15 @@ export const useX402Withdraw = () => {
 
   const withdraw = async (streamId: number) => {
     try {
+      // Set reasonable gas limit for Hedera
+      const gasLimit = BigInt(300000); // ~0.3M gas units for simple withdrawal
+      
       await writeContract({
         address: X402_STREAMING_ADDRESS,
         abi: X402StreamingABI.abi,
         functionName: 'withdraw',
-        args: [BigInt(streamId)]
+        args: [BigInt(streamId)],
+        gas: gasLimit
       });
     } catch (error) {
       console.error('Withdraw error:', error);
@@ -311,4 +324,81 @@ export const useX402Withdraw = () => {
     hash,
     error
   };
+};
+
+/**
+ * Hook to get withdrawable balance for a specific stream
+ */
+export const useX402WithdrawableBalance = (streamId: number | null) => {
+  const { data: owedAmount, isLoading, error } = useReadContract({
+    address: X402_STREAMING_ADDRESS,
+    abi: X402StreamingABI.abi,
+    functionName: 'calculateOwed',
+    args: streamId !== null && streamId > 0 ? [BigInt(streamId)] : undefined,
+    query: {
+      enabled: streamId !== null && streamId > 0,
+      refetchInterval: 5000 // Refresh every 5 seconds to show accumulating balance
+    }
+  });
+
+  const { data: streamData } = useReadContract({
+    address: X402_STREAMING_ADDRESS,
+    abi: X402StreamingABI.abi,
+    functionName: 'getStreamData',
+    args: streamId !== null && streamId > 0 ? [BigInt(streamId)] : undefined,
+    query: {
+      enabled: streamId !== null && streamId > 0
+    }
+  });
+
+  return {
+    owedAmount,
+    streamData,
+    isLoading,
+    error
+  };
+};
+
+/**
+ * Hook to get user's streams as receiver (can withdraw from these)
+ * Fetches streams where the user owns the receiver agent
+ */
+export const useUserReceivableStreams = (receiverAgentIds: number[]) => {
+  const [streams, setStreams] = useState<Array<{
+    streamId: number;
+    balance: bigint;
+    senderAgentId: number;
+    receiverAgentId: number;
+    asset: string;
+    active: boolean;
+  }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (receiverAgentIds.length === 0) {
+      setStreams([]);
+      return;
+    }
+
+    // For now, use localStorage as a starting point
+    // In production, you'd query StreamOpened events from the blockchain
+    const stored = localStorage.getItem('userStreams');
+    if (stored) {
+      try {
+        const streamIds = JSON.parse(stored);
+        setStreams(streamIds.map((id: number) => ({
+          streamId: id,
+          balance: 0n,
+          senderAgentId: 0,
+          receiverAgentId: 0,
+          asset: '0x0000000000000000000000000000000000000000',
+          active: true
+        })));
+      } catch (err) {
+        console.error('Error loading streams:', err);
+      }
+    }
+  }, [receiverAgentIds]);
+
+  return { streams, isLoading };
 };

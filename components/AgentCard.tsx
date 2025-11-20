@@ -12,12 +12,13 @@ interface AgentCardProps {
   isMinting?: boolean;
   isDeactivating?: boolean;
   isOnChain?: boolean;
+  onChainTokenId?: number;
   customOrder?: string;
   onCustomOrderChange?: (order: string) => void;
   generatedSprite?: string;
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick, status, isAutoMode, isMinting, isDeactivating, isOnChain, customOrder, onCustomOrderChange, generatedSprite }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClick, status, isAutoMode, isMinting, isDeactivating, isOnChain, onChainTokenId, customOrder, onCustomOrderChange, generatedSprite }) => {
   const isLocked = isAutoMode && agent.id !== 'a0'; // Lock all except Commander in auto mode
   const isCommander = agent.id === 'a0';
   const [spriteLoaded, setSpriteLoaded] = useState(false);
@@ -97,10 +98,17 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClic
             <Shield size={10} className="text-neon-green" />
             <span>TS: {agent.trustScore}</span>
           </div>
-          <div className="flex items-center gap-1 bg-black/30 p-1 rounded justify-center">
-            <Hash size={10} />
-            <span>#{agent.tokenId}</span>
-          </div>
+          {onChainTokenId ? (
+            <div className="flex items-center gap-1 bg-neon-green/20 border border-neon-green/40 p-1 rounded justify-center">
+              <Hash size={10} className="text-neon-green" />
+              <span className="text-neon-green font-bold">ID: {onChainTokenId}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 bg-black/30 p-1 rounded justify-center">
+              <Hash size={10} />
+              <span>#{agent.tokenId}</span>
+            </div>
+          )}
         </div>
 
         {/* Custom Order Input for Commander */}

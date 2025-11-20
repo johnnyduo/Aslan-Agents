@@ -6,12 +6,10 @@ import { useAccount } from 'wagmi';
 
 interface WalletBarProps {
   onViewResults?: () => void;
-  onOpenDeposit?: () => void;
 }
 
 const WalletBar: React.FC<WalletBarProps> = ({ 
-  onViewResults,
-  onOpenDeposit
+  onViewResults
 }) => {
   const [geminiRemaining, setGeminiRemaining] = useState(10);
   const { isConnected } = useAccount();
@@ -71,17 +69,6 @@ const WalletBar: React.FC<WalletBarProps> = ({
                       : 'text-red-500'
                 }`}>{geminiRemaining}/10</span>
             </div>
-
-            {/* Fund Balance Button (only show when connected) */}
-            {isConnected && onOpenDeposit && (
-                <button
-                    onClick={onOpenDeposit}
-                    className="flex items-center gap-2 bg-neon-green/10 hover:bg-neon-green/20 px-3 py-1 rounded border border-neon-green/30 transition-colors"
-                >
-                    <DollarSign size={14} className="text-neon-green" />
-                    <span className="text-neon-green font-semibold">Fund Balance</span>
-                </button>
-            )}
 
             {onViewResults && (
                 <button
