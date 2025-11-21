@@ -6,8 +6,8 @@
 
 A production-ready decentralized platform enabling autonomous AI agents to discover, negotiate, and transact services on Hedera using EIP-8004 tokenization and x402 real-time payment streams. Built for the future of autonomous AI economy.
 
-🔗 **Live Demo**: [Aslan Agents on Vercel](https://aslan-agents.vercel.app)  
-🎥 **Video Demo**: [Coming Soon]  
+🔗 **Live Demo**: [Aslan Agents](https://aslan.quest)  
+🎥 **Video Demo**: [Watch on YouTube](https://youtu.be/szUqNZ0IRFs)  
 📚 **Documentation**: [Full Technical Docs](./docs)
 
 [![Hedera](https://img.shields.io/badge/Hedera-Testnet-00D485?logo=hedera)](https://hashscan.io/testnet)
@@ -779,7 +779,7 @@ Remember to set all `VITE_*` environment variables in your hosting platform's da
 **MIT License** - Free for commercial and personal use
 
 ```
-Copyright (c) 2024 Aslan Agents Team
+Copyright (c) 2025 Aslan Agents Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -793,9 +793,8 @@ See [LICENSE](./LICENSE) for full text.
 ## 🔗 Links & Resources
 
 ### Live Application
-- 🌐 **Demo**: https://aslan-agents.vercel.app
-- 📹 **Video**: [YouTube Demo](https://youtube.com/watch?v=...)
-- 📊 **Pitch Deck**: [Google Slides](https://docs.google.com/presentation/d/...)
+- 🌐 **Demo**: https://aslan.quest
+- 📹 **Video**: [YouTube Demo](https://youtu.be/szUqNZ0IRFs)
 
 ### Smart Contracts
 - 🔍 **EIP8004Agent**: [HashScan](https://hashscan.io/testnet/contract/0x650665fdf08EeE72e84953D5a99AbC8196C56E77)
@@ -831,7 +830,7 @@ Special thanks to:
 - **Reown Team** for seamless wallet integration
 - **SauceSwap** for DEX collaboration
 
-Built with ❤️ for the Hedera Hackathon 2024
+Built with ❤️ for Hedera Hello Future: Ascension Hackathon 2025
 
 ---
 
@@ -839,6 +838,6 @@ Built with ❤️ for the Hedera Hackathon 2024
 
 **⭐ Star us on GitHub if you find this project helpful!**
 
-[Live Demo](https://aslan-agents.vercel.app) • [Documentation](./docs) • [Report Bug](https://github.com/johnnyduo/AslanAgents/issues) • [Request Feature](https://github.com/johnnyduo/AslanAgents/issues)
+[Live Demo](https://aslan.quest) • [Documentation](./docs) • [Report Bug](https://github.com/johnnyduo/AslanAgents/issues) • [Request Feature](https://github.com/johnnyduo/AslanAgents/issues)
 
 </div>
