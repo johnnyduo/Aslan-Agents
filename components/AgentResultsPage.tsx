@@ -254,8 +254,8 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
       // Market Research - Price data with proper formatting
       if (result.taskType === 'market_research' && data.price) {
         const priceDisplay = data.price < 1 
-          ? `$${data.price.toFixed(3)}` 
-          : `$${data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`;
+          ? `$${data.price.toFixed(6)}` 
+          : `$${data.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         const changeAmount = data.price * (data.changePercent / 100);
         const volumeDisplay = typeof data.volume === 'string' ? data.volume : `$${(data.volume / 1e9).toFixed(2)}B`;
         const marketCapDisplay = typeof data.marketCap === 'string' ? data.marketCap : `$${(data.marketCap / 1e9).toFixed(2)}B`;
@@ -295,13 +295,13 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
                 <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
                   <div className="text-xs text-gray-400 mb-1 font-mono">24H HIGH</div>
                   <div className="text-sm font-mono text-green-400">
-                    ${data.high24h < 1 ? data.high24h.toFixed(3) : data.high24h?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                    ${data.high24h < 1 ? data.high24h.toFixed(6) : data.high24h?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
                   <div className="text-xs text-gray-400 mb-1 font-mono">24H LOW</div>
                   <div className="text-sm font-mono text-red-400">
-                    ${data.low24h < 1 ? data.low24h.toFixed(3) : data.low24h?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                    ${data.low24h < 1 ? data.low24h.toFixed(6) : data.low24h?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
