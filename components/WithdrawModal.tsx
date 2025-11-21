@@ -27,35 +27,101 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [withdrawingStreamId, setWithdrawingStreamId] = useState<string | null>(null);
   const [step, setStep] = useState<'list' | 'success'>('list');
   const [successHandled, setSuccessHandled] = useState(false);
+  const [isLoadingStreams, setIsLoadingStreams] = useState(false);
 
-  // Load user's created streams
-  useEffect(() => {
-    if (isOpen) {
-      const stored = localStorage.getItem('userStreams');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          // Filter valid stream IDs and clean up scientific notation
-          const validStreams = Array.isArray(parsed) 
-            ? parsed.filter((id: string) => {
-                const num = Number(id);
-                return !isNaN(num) && num > 0 && num < 1000000 && Number.isFinite(num);
-              })
-            : [];
-          
-          // Clean localStorage if needed
-          if (validStreams.length !== parsed.length) {
-            console.log('Cleaned invalid stream IDs from localStorage');
-            localStorage.setItem('userStreams', JSON.stringify(validStreams));
+  // Fetch streams from Hedera Mirror Node (on-chain source of truth)
+  const fetchStreamsFromChain = async () => {
+    if (!address || captainAgentId === 0) return [];
+    
+    setIsLoadingStreams(true);
+    try {
+      // X402 Streaming contract address
+      const contractAddress = '0x805492D120C29A4933FB1D3FfCe944A2D42222F4';
+      
+      // Query Hedera Mirror Node for StreamOpened events
+      // Event signature: StreamOpened(uint256 indexed streamId, uint256 indexed senderAgentId, ...)
+      const url = `https://testnet.mirrornode.hedera.com/api/v1/contracts/${contractAddress}/results/logs?topic0=0x0edde3241ad68cd979eb9449c1e3d81bbef9eee85a02fefe8a2eaed04888231d&topic1=&limit=100&order=desc`;
+      
+      console.log('🔍 Fetching streams from Hedera Mirror Node...');
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.warn('Mirror Node API returned:', response.status);
+        return [];
+      }
+      
+      const data = await response.json();
+      
+      // Parse stream IDs from logs
+      const streamIds: string[] = [];
+      if (data.logs && Array.isArray(data.logs)) {
+        for (const log of data.logs) {
+          if (log.topics && log.topics.length > 1) {
+            // topic[0] = event signature, topic[1] = streamId (indexed)
+            const streamIdHex = log.topics[1];
+            const streamId = BigInt(streamIdHex).toString();
+            
+            // topic[2] = senderAgentId (indexed)
+            if (log.topics[2]) {
+              const senderAgentId = BigInt(log.topics[2]).toString();
+              // Only include streams from this Captain
+              if (senderAgentId === captainAgentId.toString()) {
+                streamIds.push(streamId);
+              }
+            }
           }
-          
-          setUserStreams(validStreams.reverse()); // Newest first
-        } catch (err) {
-          console.error('Error loading streams:', err);
         }
       }
+      
+      console.log(`✅ Found ${streamIds.length} streams on-chain for Captain #${captainAgentId}`);
+      return streamIds;
+      
+    } catch (error) {
+      console.error('❌ Error fetching streams from chain:', error);
+      return [];
+    } finally {
+      setIsLoadingStreams(false);
     }
-  }, [isOpen]);
+  };
+
+  // Load streams: Try localStorage first, then fetch from chain
+  useEffect(() => {
+    if (isOpen && address) {
+      const loadStreams = async () => {
+        // First, try localStorage (fast)
+        const stored = localStorage.getItem('userStreams');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            const validStreams = Array.isArray(parsed) 
+              ? parsed.filter((id: string) => {
+                  const num = Number(id);
+                  return !isNaN(num) && num > 0 && num < 1000000 && Number.isFinite(num);
+                })
+              : [];
+            
+            if (validStreams.length > 0) {
+              setUserStreams(validStreams.reverse());
+              return; // Use cached data
+            }
+          } catch (err) {
+            console.error('Error loading streams from localStorage:', err);
+          }
+        }
+        
+        // No localStorage data, fetch from chain
+        console.log('📡 No cached streams, querying Hedera Mirror Node...');
+        const chainStreams = await fetchStreamsFromChain();
+        if (chainStreams.length > 0) {
+          setUserStreams(chainStreams);
+          // Update localStorage for next time
+          localStorage.setItem('userStreams', JSON.stringify(chainStreams));
+        }
+      };
+      
+      loadStreams();
+    }
+  }, [isOpen, address, captainAgentId]);
 
   // Handle successful withdrawal
   useEffect(() => {
@@ -128,16 +194,16 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     }
   };
 
-  const handleRefresh = () => {
-    const stored = localStorage.getItem('userStreams');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setUserStreams(Array.isArray(parsed) ? parsed.reverse() : []);
-        toast.info('🔄 Refreshed stream list');
-      } catch (err) {
-        console.error('Error loading streams:', err);
-      }
+  const handleRefresh = async () => {
+    toast.info('🔄 Refreshing from blockchain...');
+    const chainStreams = await fetchStreamsFromChain();
+    if (chainStreams.length > 0) {
+      setUserStreams(chainStreams);
+      localStorage.setItem('userStreams', JSON.stringify(chainStreams));
+      toast.success(`✅ Found ${chainStreams.length} streams`);
+    } else {
+      setUserStreams([]);
+      toast.info('📭 No streams found');
     }
   };
 
@@ -177,6 +243,17 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   <p className="text-red-400 font-bold font-mono">⚠️ CAPTAIN NOT REGISTERED!</p>
                   <p className="text-sm text-red-400/80 mt-2">Please activate the Captain agent first.</p>
                 </div>
+              ) : isLoadingStreams ? (
+                <div className="bg-neon-green/5 border border-neon-green/20 rounded p-6 text-center">
+                  <RefreshCw className="w-8 h-8 text-neon-green mx-auto mb-3 animate-spin" />
+                  <p className="text-neon-green font-bold font-mono mb-2">🔍 SCANNING HEDERA...</p>
+                  <p className="text-sm text-gray-400">
+                    Querying Mirror Node for your payment streams
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    This may take a few seconds on first load
+                  </p>
+                </div>
               ) : userStreams.length === 0 ? (
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-6 text-center">
                   <p className="text-yellow-400 font-bold font-mono mb-2">📭 NO STREAMS FOUND</p>
@@ -184,7 +261,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     Create a payment stream first using the Deposit modal.
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    Stream IDs are automatically saved when you create deposits.
+                    Streams are automatically discovered from the blockchain
                   </p>
                 </div>
               ) : (

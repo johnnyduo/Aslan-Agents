@@ -47,6 +47,75 @@ if (typeof window !== 'undefined') {
     console.log(`✅ Cleared ${keys.length} agent registries`);
     console.log('Reload the page to start fresh');
   };
+  
+  // Helper: Backup all important data before clearing localStorage
+  (window as any).backupAslanData = () => {
+    const backup = {
+      onChainAgents: {},
+      userStreams: localStorage.getItem('userStreams'),
+      taskResults: localStorage.getItem('taskResults'),
+      activeAgents: localStorage.getItem('activeAgents'),
+      agentConnections: localStorage.getItem('agentConnections'),
+      nodePositions: localStorage.getItem('nodePositions'),
+      timestamp: new Date().toISOString()
+    };
+    
+    // Backup all wallet-specific agent data
+    const agentKeys = Object.keys(localStorage).filter(k => k.startsWith('onChainAgents_'));
+    agentKeys.forEach(key => {
+      backup.onChainAgents[key] = localStorage.getItem(key);
+    });
+    
+    const json = JSON.stringify(backup, null, 2);
+    console.log('📦 Backup created:', backup);
+    console.log('💾 To save, copy this to a file:');
+    console.log(json);
+    return backup;
+  };
+  
+  // Helper: Restore from backup
+  (window as any).restoreAslanData = (backup: any) => {
+    if (!backup || typeof backup !== 'object') {
+      console.error('❌ Invalid backup data');
+      return;
+    }
+    
+    // Restore wallet-specific agents
+    if (backup.onChainAgents) {
+      Object.entries(backup.onChainAgents).forEach(([key, value]) => {
+        if (value) localStorage.setItem(key, value as string);
+      });
+    }
+    
+    // Restore other data
+    if (backup.userStreams) localStorage.setItem('userStreams', backup.userStreams);
+    if (backup.taskResults) localStorage.setItem('taskResults', backup.taskResults);
+    if (backup.activeAgents) localStorage.setItem('activeAgents', backup.activeAgents);
+    if (backup.agentConnections) localStorage.setItem('agentConnections', backup.agentConnections);
+    if (backup.nodePositions) localStorage.setItem('nodePositions', backup.nodePositions);
+    
+    console.log('✅ Backup restored! Reload the page.');
+    console.log('📊 Restored from:', backup.timestamp);
+  };
+  
+  // Helper: Show all stream IDs (for recovery)
+  (window as any).showAllStreams = () => {
+    const stored = localStorage.getItem('userStreams');
+    if (!stored) {
+      console.log('❌ No streams found in localStorage');
+      return;
+    }
+    
+    try {
+      const streams = JSON.parse(stored);
+      console.log('📡 Your Stream IDs:', streams);
+      console.log('💡 These are your x402 payment streams');
+      console.log('📝 Save these IDs to manually recover if needed');
+      return streams;
+    } catch (err) {
+      console.error('❌ Error parsing streams:', err);
+    }
+  };
 }
 
 // Helper to get Hedera testnet explorer URL

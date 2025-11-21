@@ -711,6 +711,31 @@ npm run dev
 - Wait 10-15 seconds for first intelligence cycle
 - Check console logs for API rate limits
 
+**Cleared localStorage and Lost Data?**
+```bash
+# BEFORE clearing localStorage, always backup:
+backupAslanData()
+# Saves: agents, streams, results, connections
+
+# To restore after clearing:
+restoreAslanData(yourBackupObject)
+
+# Lost stream IDs? View them:
+showAllStreams()
+
+# If completely lost, check Hedera Explorer:
+# 1. Find your deposit transactions
+# 2. Look for "StreamOpened" event logs
+# 3. First indexed parameter = streamId
+```
+
+**⚠️ IMPORTANT: localStorage Clearing Impact**
+- ❌ **Withdrawals**: Stream IDs lost - can't withdraw without them
+- ❌ **Agent Data**: Token IDs lost - UI shows "Mint Agent" again
+- ❌ **Results Page**: All task history cleared
+- ✅ **On-Chain Data**: Agents and streams still exist on Hedera
+- 💡 **Solution**: Always run `backupAslanData()` before clearing browser data
+
 ### Need Help?
 
 - 📖 Check `/docs` folder for detailed guides
