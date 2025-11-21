@@ -80,7 +80,7 @@ export const AGENTS: AgentMetadata[] = [
     id: 'a3',
     name: 'Reynard Swift',
     role: AgentRole.MERCHANT,
-    description: 'HBAR/SAUCE Swap Executor. Cunning fox who monitors signals and executes swaps on testnet.sauceswap.finance with 0.01-0.05 HBAR limits. Requires Commander approval via x402.',
+    description: 'HBAR/SAUCE Swap Executor. Cunning fox who monitors signals and executes swaps on testnet.saucerswap.finance with 0.01-0.05 HBAR limits. Requires Commander approval via x402.',
     capabilities: ['DEX Trading', 'Signal Detection', 'Slippage Protection', 'Auto-swap with Limits'],
     tokenId: 800403,
     trustScore: 85,
@@ -94,10 +94,10 @@ export const AGENTS: AgentMetadata[] = [
       dialogues: [
         'My cunning senses a trade! HBAR→SAUCE signal. Seeking Aslan\'s blessing...',
         'Swift as a fox! Swap executed: 0.023 HBAR → 47 SAUCE. Slippage: 0.4%.',
-        'I\'ve sniffed out the best pool. SauceSwap analysis complete.',
+        'I\'ve sniffed out the best pool. SaucerSwap analysis complete.',
         'Great Aslan, Eagleton signals a hunt! HBAR trend is ripe. Ready to pounce.',
         'Clever trading: Max 0.05 HBAR per hunt. This catch: 0.018 HBAR.',
-        'My den is ready. testnet.sauceswap.finance connected and optimized.'
+        'My den is ready. testnet.saucerswap.finance connected and optimized.'
       ]
     }
   },
@@ -216,11 +216,11 @@ export const AGENT_ABILITIES = {
   },
   'a3': { // Reynard Swift - Merchant
     primary: 'DEX Trading',
-    apis: ['SauceSwap DEX', 'Hedera Mirror Node'],
+    apis: ['SaucerSwap DEX', 'Hedera Mirror Node'],
     operations: ['HBAR trading', 'Liquidity analysis', 'Price impact calculation', 'Slippage protection'],
     canExecute: ['swap_execution', 'dex_trading', 'liquidity_check'],
     taskType: 'swap_execution',
-    dataSource: 'testnet.sauceswap.finance',
+    dataSource: 'testnet.saucerswap.finance',
     tradingPairs: ['HBAR/USDC', 'HBAR/SAUCE'],
     maxTradeSize: '0.05 HBAR',
     network: 'Hedera Testnet',
@@ -228,7 +228,7 @@ export const AGENT_ABILITIES = {
     saucerSwapApiKey: '875e1017-87b8-4b12-8301-6aa1f1aa073b',
     fallbackTxHash: '0x7f433b7c438d25aaec21934625e93fc90cc0b8d52c0a3d1b1dd6eae60ee44ef5',
     apiEndpoints: {
-      'SauceSwap DEX': 'https://test-api.saucerswap.finance',
+      'SaucerSwap DEX': 'https://test-api.saucerswap.finance',
       'Hedera Mirror Node': 'https://testnet.mirrornode.hedera.com/api/v1'
     }
   },
@@ -259,8 +259,8 @@ export const AGENT_ABILITIES = {
     primary: 'News Monitoring',
     apis: ['News API', 'Hedera Mirror Node'],
     operations: ['Breaking news detection', 'Whale movement tracking', 'Event correlation', 'Real-time alerts'],
-    canExecute: ['news_monitoring', 'alert_system', 'whale_tracking'],
-    taskType: 'sentiment_analysis',
+    canExecute: ['news_monitoring', 'alert_system', 'whale_tracking', 'sentiment_analysis'],
+    taskType: 'news_monitoring', // Changed from sentiment_analysis to be more specific
     apiEndpoints: {
       'News API': 'https://newsapi.org/v2',
       'Hedera Mirror Node': 'https://testnet.mirrornode.hedera.com/api/v1'

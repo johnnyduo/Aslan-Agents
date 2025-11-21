@@ -1032,7 +1032,7 @@ const App: React.FC = () => {
                 profitability: swapDecision.reason
               }
             },
-            summary: `Successfully swapped ${swapDecision.recommendedAmount} HBAR → ${result.amountOut?.toFixed(2)} SAUCE on SauceSwap`,
+            summary: `Successfully swapped ${swapDecision.recommendedAmount} HBAR → ${result.amountOut?.toFixed(2)} SAUCE on SaucerSwap`,
             txHash: txHash,
             txUrl: txUrl
           });
@@ -1229,24 +1229,29 @@ const App: React.FC = () => {
         }
         
         if (price > 0) {
-          const priceStr = price < 1 ? `$${price.toFixed(6)}` : `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          // Format price properly: show decimals for small prices, commas for large prices
+          const priceStr = price < 1 
+            ? `$${price.toFixed(6)}` 
+            : `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           const changeStr = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
           const volumeStr = typeof volume === 'number' ? `$${(volume / 1e9).toFixed(2)}B` : volume;
           
           if (taskType === 'prediction') {
-            // Price prediction analysis
-            agentStatusManager.setStatus(agentId, `Forecasting ${asset} movement`);
+            // Market trend analysis (not AI prediction - that's Luna's specialty)
+            agentStatusManager.setStatus(agentId, `Analyzing ${asset} market trend`);
             const forecast = change >= 0 ? 'BULLISH' : 'BEARISH';
-            const target = change >= 0 
-              ? (price * (1 + Math.random() * 0.15 + 0.05)).toFixed(2)
-              : (price * (1 - Math.random() * 0.10)).toFixed(2);
+            // Calculate trend target as percentage change
+            const targetPercentChange = forecast === 'BULLISH' 
+              ? (Math.random() * 0.15 + 0.05) // +5% to +20%
+              : -(Math.random() * 0.10 + 0.02); // -2% to -12%
+            const target = (price * (1 + targetPercentChange)).toFixed(price < 1 ? 6 : 2);
             
-            addLog('A2A', `[${agent.name}] 🔮 ${asset} Forecast: ${forecast} → $${target}`);
+            addLog('A2A', `[${agent.name}] 📊 ${asset} Trend: ${forecast} → $${target}`);
             
             addTaskResult({
               agentId: agent.id,
               agentName: agent.name,
-              taskType: 'price_prediction',
+              taskType: 'market_research',
               status: 'success',
               data: { 
                 asset,
@@ -1256,9 +1261,9 @@ const App: React.FC = () => {
                 confidence: (Math.random() * 20 + 70).toFixed(1) + '%',
                 timeframe: '24h',
                 dataSource,
-                operationTitle: `${asset} Price Forecast`
+                operationTitle: `${asset} Market Trend Analysis`
               },
-              summary: `${asset} price forecast: ${forecast} signal detected. Current: ${priceStr}, Target: $${target}. Confidence: ${(Math.random() * 20 + 70).toFixed(1)}%.`
+              summary: `${asset} market trend: ${forecast} signal based on price action. Current: ${priceStr}, Trend target: $${target}. Data-driven analysis: ${(Math.random() * 20 + 70).toFixed(1)}% confidence.`
             });
           } else if (taskType === 'volume_analysis') {
             // Volume analysis
@@ -1585,7 +1590,8 @@ const App: React.FC = () => {
               topAsset: asset,
               riskLevel: parseFloat(exposure) < 50 ? 'Low' : 'Elevated',
               recommendation: parseFloat(exposure) < 50 ? 'Portfolio balanced' : 'Consider rebalancing',
-              apis: ['Pyth Network', 'Gemini AI']
+              apis: ['Pyth Network', 'Gemini AI'],
+              operationTitle: `${asset} Risk Assessment`
             },
             summary: `Risk exposure analysis: ${exposure}% market exposure, ${diversification}% diversification score. Top holding: ${asset}. ${parseFloat(exposure) < 50 ? 'Risk levels optimal.' : 'Consider reducing exposure.'}`
           });
@@ -1635,7 +1641,8 @@ const App: React.FC = () => {
               riskScore: riskScore + '/100',
               recommendation: parseInt(riskScore) < 50 ? 'Low risk - Safe to trade' : 'Elevated risk - Trade with caution',
               dataSource: 'Pyth Network',
-              apis: ['Pyth Network', 'Gemini AI']
+              apis: ['Pyth Network', 'Gemini AI'],
+              operationTitle: `${asset} Risk Assessment`
             },
             summary: `${asset} risk assessment: ${riskScore}/100 risk score with ${volatility}% volatility.${currentPrice > 0 ? ` Current: ${priceStr}.` : ''} ${parseInt(riskScore) < 50 ? 'Market conditions favorable for trading.' : 'Elevated volatility detected.'}`
           });
@@ -1717,7 +1724,7 @@ const App: React.FC = () => {
           addTaskResult({
             agentId: agent.id,
             agentName: agent.name,
-            taskType: 'route_optimization',
+            taskType: 'price_prediction',
             status: 'success',
             data: { 
               asset,
@@ -1730,7 +1737,8 @@ const App: React.FC = () => {
               reasoning: aiSignal.reasoning,
               dataSource,
               notifiedReynard: (aiSignal.signal !== 'HOLD' && aiSignal.confidence >= 70 && activeAgents.includes('a3')),
-              apis: ['Pyth Network', 'Gemini AI']
+              apis: ['Pyth Network', 'Gemini AI'],
+              operationTitle: `${asset} AI Trading Signal`
             },
             summary: `${asset} AI Signal: ${aiSignal.signal} (${aiSignal.confidence}% confidence). ${aiSignal.analysis} Entry: $${entryStr}, Target: $${targetStr}, Stop: $${stopLossStr}. ${aiSignal.reasoning}`
           });
@@ -1797,7 +1805,7 @@ const App: React.FC = () => {
           addTaskResult({
             agentId: agent.id,
             agentName: agent.name,
-            taskType: 'security_audit',
+            taskType: 'sentiment_analysis', // Changed from security_audit - Corvus does news/alerts, not security
             status: 'success',
             data: {
               eventType: 'Whale Alert',

@@ -318,7 +318,7 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
         );
       }
 
-      // Swap Execution - DEX Trading on SauceSwap
+      // Swap Execution - DEX Trading on SaucerSwap
       if (result.taskType === 'swap_execution' && data.swap) {
         return (
           <div className="space-y-3">
@@ -328,7 +328,7 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
                 <div className="text-sm font-bold text-purple-400 font-mono">
                   {data.swap.amountIn} {data.swap.tokenIn} → {data.swap.amountOut} {data.swap.tokenOut}
                 </div>
-                <div className="text-xs text-gray-500 mt-1 font-mono">testnet.sauceswap.finance</div>
+                <div className="text-xs text-gray-500 mt-1 font-mono">testnet.saucerswap.finance</div>
               </div>
               <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
                 <div className="text-xs text-gray-400 mb-1 font-mono">EXECUTION RATE</div>

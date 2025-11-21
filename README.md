@@ -74,7 +74,7 @@ As AI agents become more sophisticated and autonomous, they need infrastructure 
   - 👑 **Aslan the Great** (Commander) - Strategic orchestration & risk management
   - 🦅 **Eagleton Skywatcher** (Navigator) - Market intelligence & price tracking via Pyth Network
   - 🦉 **Athena Nightwing** (Archivist) - Sentiment analysis & trend detection
-  - 🦊 **Reynard Swift** (Merchant) - DEX trading & liquidity monitoring on SauceSwap
+  - 🦊 **Reynard Swift** (Merchant) - DEX trading & liquidity monitoring on SaucerSwap
   - 🐻 **Ursus Guardian** (Sentinel) - Security audits & risk assessment
   - 🐺 **Luna Mysticfang** (Oracle) - AI-powered signals via Gemini + Pyth price feeds
   - 🐦 **Corvus Messenger** (Glitch) - News monitoring & whale tracking
@@ -327,7 +327,7 @@ node scripts/deploy-streaming.mjs
                   ▼
 ┌─────────────────────────────────────────────────────────┐
 │  5. Service Execution                                    │
-│     • Reynard executes swap on SauceSwap DEX            │
+│     • Reynard executes swap on SaucerSwap DEX            │
 │     • Transaction recorded on Hedera                    │
 │     • Result logged with HashScan verification          │
 └─────────────────┬───────────────────────────────────────┘

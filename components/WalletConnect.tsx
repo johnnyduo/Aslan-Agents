@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAccount, useBalance, useReadContract } from 'wagmi';
 import { formatUnits } from 'viem';
 import { USDC_ADDRESS } from '../config/walletConfig';
-import { Wallet } from 'lucide-react';
+import { Wallet, Droplet } from 'lucide-react';
 
 // ERC20 ABI for balanceOf and decimals
 const ERC20_ABI = [
@@ -51,6 +51,10 @@ export const WalletConnect: React.FC = () => {
 
   if (!mounted) return null;
 
+  // Check if USDC balance is zero
+  const usdcBalanceValue = usdcBalance && usdcDecimals ? parseFloat(formatUnits(usdcBalance, usdcDecimals)) : 0;
+  const hasZeroUSDC = usdcBalanceValue === 0;
+
   return (
     <div className="flex items-center gap-3">
       {isConnected && address ? (
@@ -70,6 +74,21 @@ export const WalletConnect: React.FC = () => {
               {usdcBalance && usdcDecimals ? parseFloat(formatUnits(usdcBalance, usdcDecimals)).toFixed(2) : '0.00'}
             </span>
           </div>
+
+          {/* USDC Faucet Button - Only show when balance is 0 */}
+          {hasZeroUSDC && (
+            <a
+              href="https://faucet.hedera.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1 rounded border border-blue-500/30 transition-colors group"
+              title="Get free testnet USDC"
+            >
+              <Droplet size={14} className="text-blue-400 group-hover:animate-bounce" />
+              <span className="text-blue-400 font-bold text-xs">Get USDC</span>
+            </a>
+          )}
+
 
           {/* Connected Address - Click to manage */}
           <button

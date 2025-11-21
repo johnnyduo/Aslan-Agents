@@ -159,7 +159,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLaunchApp }) => {
             name="Reynard Swift" 
             role="Merchant" 
             avatar="/lottie/Happy Unicorn Dog.json"
-            ability="DEX executor monitoring signals and swapping HBAR/SAUCE on SauceSwap"
+            ability="DEX executor monitoring signals and swapping HBAR/SAUCE on SaucerSwap"
           />
           <AgentPreview 
             name="Ursus Guardian" 
