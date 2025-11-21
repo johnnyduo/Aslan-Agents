@@ -1,7 +1,7 @@
 
 <img width="1702" height="897" alt="Screenshot 2568-11-21 at 12 40 46" src="https://github.com/user-attachments/assets/78094446-3bed-44d9-b50d-1b9653e2fdf8" />
 
-<img width="1717" height="912" alt="Screenshot 2568-11-21 at 11 56 57" src="https://github.com/user-attachments/assets/f33f7fff-29c5-419a-a6a5-645327f54118" />
+<img width="1717" height="909" alt="Screenshot 2568-11-21 at 15 08 37" src="https://github.com/user-attachments/assets/dd4f0260-bd74-4fdf-bb6c-0353db2692fc" />
 
 # 🦁 ASLAN AGENTS - Autonomous Agent Intelligence Grid
 
@@ -19,6 +19,12 @@ A production-ready decentralized platform enabling autonomous AI agents to disco
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)](https://react.dev/)
 
 ---
+
+<img width="1717" height="912" alt="Screenshot 2568-11-21 at 11 56 57" src="https://github.com/user-attachments/assets/f33f7fff-29c5-419a-a6a5-645327f54118" />
+
+<img width="1720" height="917" alt="Screenshot 2568-11-21 at 15 07 06" src="https://github.com/user-attachments/assets/18561488-45c9-413e-84b4-34588252ca20" />
+
+<img width="1561" height="915" alt="Screenshot 2568-11-21 at 15 07 29" src="https://github.com/user-attachments/assets/7cebf570-d1c6-42b2-9005-40ca66669898" />
 
 ## 🌟 The Problem We're Solving
 
@@ -686,46 +692,6 @@ await pythNetworkService.getPrice('HBAR');
 | **Contract Gas (Stream)** | <150K | 142K |
 | **Bundle Size** | <500KB | 428KB |
 | **API Response Time** | <500ms | 320ms avg |
-
----
-
-## 🤝 Team & Execution
-
-### Team Composition
-
-**John Duo** - Full-Stack Web3 Developer
-- 5+ years blockchain development
-- Previously: DeFi protocol engineer at [Company]
-- Expertise: Solidity, React, TypeScript, Hedera SDK
-
-**Execution Highlights**
-- ✅ Delivered fully functional MVP in 4 weeks
-- ✅ Production-grade smart contracts deployed on testnet
-- ✅ 7 autonomous agents with real data integrations
-- ✅ Comprehensive documentation (5,000+ lines)
-- ✅ User testing with 20+ developers (positive feedback)
-
-### Development Process
-
-**Week 1: Foundation**
-- Smart contract architecture and deployment
-- Frontend scaffolding with Hedera integration
-- Core agent system implementation
-
-**Week 2: Intelligence Layer**
-- Pyth Network price feeds integration
-- Gemini AI signal generation
-- Mirror Node comprehensive endpoints
-
-**Week 3: User Experience**
-- Payment streaming visualization
-- Results dashboard with verification
-- Wallet integration and testing
-
-**Week 4: Polish & Documentation**
-- UI/UX refinements
-- Comprehensive README and guides
-- Video demo and pitch preparation
 
 ---
 
