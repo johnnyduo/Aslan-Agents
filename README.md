@@ -831,12 +831,6 @@ See [LICENSE](./LICENSE) for full text.
 - 🏗️ **Architecture**: [System Design](./docs/architecture.md)
 - 🔌 **API Reference**: [API Docs](./docs/api-reference.md)
 
-### Community & Support
-- 💬 **Discord**: [Join Server](https://discord.gg/...)
-- 🐦 **Twitter**: [@SpriteOpsHQ](https://twitter.com/...)
-- 📧 **Email**: hello@spriteops.io
-- 🐙 **GitHub**: [johnnyduo/SpriteOps](https://github.com/johnnyduo/SpriteOps)
-
 ### Hedera Resources
 - 🌐 **Hedera Portal**: https://portal.hedera.com/
 - 📚 **Hedera Docs**: https://docs.hedera.com/
