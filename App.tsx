@@ -12,6 +12,7 @@ import { AgentProgressBar } from './components/AgentProgressBar';
 import { DepositModal } from './components/DepositModal';
 import { WithdrawModal } from './components/WithdrawModal';
 import { CaptainControlPanel } from './components/CaptainControlPanel';
+import LandingPage from './components/LandingPage';
 import { Wallet, BarChart3 } from 'lucide-react';
 import { orchestrator, cryptoService, newsService, hederaService, agentStatusManager, sauceSwapService, pythNetworkService, hederaSwapTracker, geminiService } from './services/api';
 import { testAPIs } from './testAPIs';
@@ -76,6 +77,21 @@ const fetchHederaTransaction = async (txHash: string): Promise<any> => {
 };
 
 const App: React.FC = () => {
+  // --- Landing Page State ---
+  const [showLanding, setShowLanding] = useState<boolean>(() => {
+    const hasVisited = localStorage.getItem('hasVisitedApp');
+    return !hasVisited;
+  });
+
+  const handleLaunchApp = () => {
+    localStorage.setItem('hasVisitedApp', 'true');
+    setShowLanding(false);
+  };
+
+  const handleBackToLanding = () => {
+    setShowLanding(true);
+  };
+
   // --- Wallet & Contract Hooks ---
   const { address, isConnected } = useAccount();
   const { mintAgent, isPending: isMinting, isConfirming, isSuccess: mintSuccess, hash, receipt } = useMintAgent();
@@ -2001,9 +2017,9 @@ const App: React.FC = () => {
     );
   }
 
-  return (
+  const mainApp = (
     <div className="flex flex-col h-screen bg-[#050505] text-gray-200 overflow-hidden font-sans selection:bg-neon-green selection:text-black">
-      <WalletBar />
+      <WalletBar onLogoClick={handleBackToLanding} />
       
       <div className="flex flex-1 overflow-hidden relative">
         
@@ -2184,6 +2200,14 @@ const App: React.FC = () => {
       />
     </div>
   );
+
+  // Show landing page on first visit
+  if (showLanding) {
+    return <LandingPage onLaunchApp={handleLaunchApp} />;
+  }
+
+  // Show main app
+  return mainApp;
 };
 
 export default App;
