@@ -1,4 +1,4 @@
-import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract, useAccount, useConfig } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import X402StreamingABI from '../contracts/abis/X402Streaming.json';
 import { USDC_ADDRESS, X402_STREAMING_ADDRESS } from '../config/walletConfig';
@@ -51,19 +51,21 @@ export interface DepositParams {
  * This allows the Captain (Commander) to fund agents for autonomous operations
  */
 export const useX402Deposit = () => {
+  const { address } = useAccount();
+  const config = useConfig();
   const [approvalNeeded, setApprovalNeeded] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
   // Contract write hooks
   const { 
-    writeContract: writeApprove, 
+    writeContractAsync: writeApproveAsync, 
     data: approveHash, 
     isPending: isApprovePending,
     error: approveError 
   } = useWriteContract();
 
   const { 
-    writeContract: writeOpenStream, 
+    writeContractAsync: writeOpenStreamAsync, 
     data: streamHash, 
     isPending: isStreamPending,
     error: streamError 
@@ -88,15 +90,19 @@ export const useX402Deposit = () => {
    * Approve USDC spending for X402 contract
    */
   const approveUSDC = async (amount: string) => {
+    if (!address) throw new Error('Wallet not connected');
+    
     try {
       setIsApproving(true);
       const amountWei = parseUnits(amount, 6); // USDC has 6 decimals
 
-      await writeApprove({
+      await writeApproveAsync({
         address: USDC_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'approve',
-        args: [X402_STREAMING_ADDRESS, amountWei]
+        args: [X402_STREAMING_ADDRESS, amountWei],
+        account: address,
+        chain: config.chains[0],
       });
       
       // Approval transaction will be tracked via isApproveSuccess
@@ -140,10 +146,12 @@ export const useX402Deposit = () => {
         // For now, user must approve first
       }
 
+      if (!address) throw new Error('Wallet not connected');
+      
       // Estimate reasonable gas for Hedera
       const gasLimit = BigInt(800000); // ~0.8M gas units, typical for Hedera contract calls
       
-      await writeOpenStream({
+      await writeOpenStreamAsync({
         address: X402_STREAMING_ADDRESS,
         abi: X402StreamingABI.abi,
         functionName: 'openStream',
@@ -155,7 +163,9 @@ export const useX402Deposit = () => {
           assetAddress
         ],
         // No value parameter - openStream is not payable, uses safeTransferFrom for ERC20
-        gas: gasLimit
+        gas: gasLimit,
+        account: address,
+        chain: config.chains[0],
       });
 
       return { success: true };
@@ -239,16 +249,22 @@ export const useX402StreamData = (streamId: number | null) => {
  * Hook to push payments (keeper function - anyone can call)
  */
 export const useX402PushPayments = () => {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { address } = useAccount();
+  const config = useConfig();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const pushPayments = async (streamId: number) => {
+    if (!address) throw new Error('Wallet not connected');
+    
     try {
-      await writeContract({
+      await writeContractAsync({
         address: X402_STREAMING_ADDRESS,
         abi: X402StreamingABI.abi,
         functionName: 'pushPayments',
-        args: [BigInt(streamId)]
+        args: [BigInt(streamId)],
+        account: address,
+        chain: config.chains[0],
       });
     } catch (error) {
       console.error('Push payments error:', error);
@@ -269,16 +285,22 @@ export const useX402PushPayments = () => {
  * Hook to close stream and return remaining funds
  */
 export const useX402CloseStream = () => {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { address } = useAccount();
+  const config = useConfig();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const closeStream = async (streamId: number) => {
+    if (!address) throw new Error('Wallet not connected');
+    
     try {
-      await writeContract({
+      await writeContractAsync({
         address: X402_STREAMING_ADDRESS,
         abi: X402StreamingABI.abi,
         functionName: 'closeStream',
-        args: [BigInt(streamId)]
+        args: [BigInt(streamId)],
+        account: address,
+        chain: config.chains[0],
       });
     } catch (error) {
       console.error('Close stream error:', error);
@@ -299,20 +321,26 @@ export const useX402CloseStream = () => {
  * Hook to withdraw accumulated payments (receiver only)
  */
 export const useX402Withdraw = () => {
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { address } = useAccount();
+  const config = useConfig();
+  const { writeContractAsync, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const withdraw = async (streamId: number) => {
+    if (!address) throw new Error('Wallet not connected');
+    
     try {
       // Set reasonable gas limit for Hedera
       const gasLimit = BigInt(300000); // ~0.3M gas units for simple withdrawal
       
-      await writeContract({
+      await writeContractAsync({
         address: X402_STREAMING_ADDRESS,
         abi: X402StreamingABI.abi,
         functionName: 'withdraw',
         args: [BigInt(streamId)],
-        gas: gasLimit
+        gas: gasLimit,
+        account: address,
+        chain: config.chains[0],
       });
     } catch (error) {
       console.error('Withdraw error:', error);

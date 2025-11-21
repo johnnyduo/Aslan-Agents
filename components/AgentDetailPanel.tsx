@@ -129,15 +129,6 @@ const AgentDetailPanel: React.FC<AgentDetailPanelProps> = ({ agent, onClose }) =
                 )}
             </div>
 
-            <div className="space-y-2 pt-4 border-t border-white/10">
-                <label className="text-xs text-gray-500 font-mono uppercase flex items-center gap-2">
-                    <Terminal size={12} /> Avatar
-                </label>
-                <div className="bg-black p-3 rounded border border-white/10 text-center">
-                    <img src={agent.avatar} alt={agent.name} className="w-24 h-24 mx-auto object-contain" style={{ imageRendering: 'pixelated' }} />
-                    <p className="text-[10px] text-gray-500 font-mono mt-2">{agent.avatar}</p>
-                </div>
-            </div>
         </div>
       </div>
 

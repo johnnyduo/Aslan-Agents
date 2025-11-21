@@ -15,11 +15,16 @@ const StreamBalanceTracker: React.FC<{
   const { owedAmount, streamData } = useX402WithdrawableBalance(streamId);
 
   useEffect(() => {
+    // Only process if owedAmount is defined and is a valid value
     if (owedAmount !== undefined && owedAmount !== null) {
-      const balance = BigInt(owedAmount);
-      // Check if stream is closed (if streamData available)
-      const isClosed = (streamData && Array.isArray(streamData) && streamData[8]) ? Boolean(streamData[8]) : false;
-      onBalanceUpdate(streamId, balance, isClosed);
+      try {
+        const balance = typeof owedAmount === 'bigint' ? owedAmount : BigInt(String(owedAmount));
+        // Check if stream is closed (if streamData available)
+        const isClosed = (streamData && Array.isArray(streamData) && streamData[8]) ? Boolean(streamData[8]) : false;
+        onBalanceUpdate(streamId, balance, isClosed);
+      } catch (error) {
+        console.error(`[WalletBar] Error processing stream ${streamId}:`, error);
+      }
     }
   }, [owedAmount, streamData, streamId, onBalanceUpdate]);
 

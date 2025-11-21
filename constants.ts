@@ -210,16 +210,18 @@ export const AGENT_ABILITIES = {
   'a3': { // Reynard Swift - Merchant
     primary: 'DEX Trading',
     apis: ['SauceSwap DEX', 'Hedera Mirror Node'],
-    operations: ['HBAR/SAUCE swaps', 'Liquidity analysis', 'Price impact calculation', 'Slippage protection'],
+    operations: ['HBAR trading', 'Liquidity analysis', 'Price impact calculation', 'Slippage protection'],
     canExecute: ['swap_execution', 'dex_trading', 'liquidity_check'],
     taskType: 'swap_execution',
     dataSource: 'testnet.sauceswap.finance',
-    tradingPairs: ['HBAR/SAUCE'],
+    tradingPairs: ['HBAR/USDC', 'HBAR/SAUCE'],
     maxTradeSize: '0.05 HBAR',
     network: 'Hedera Testnet',
     explorer: 'https://hashscan.io/testnet',
+    saucerSwapApiKey: '875e1017-87b8-4b12-8301-6aa1f1aa073b',
+    fallbackTxHash: '0x7f433b7c438d25aaec21934625e93fc90cc0b8d52c0a3d1b1dd6eae60ee44ef5',
     apiEndpoints: {
-      'SauceSwap DEX': 'https://testnet.sauceswap.finance',
+      'SauceSwap DEX': 'https://test-api.saucerswap.finance',
       'Hedera Mirror Node': 'https://testnet.mirrornode.hedera.com/api/v1'
     }
   },

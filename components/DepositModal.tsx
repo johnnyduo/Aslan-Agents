@@ -260,12 +260,13 @@ export const DepositModal: React.FC<DepositModalProps> = ({
                     <option value={0}>→ Select agent to fund...</option>
                     {connectedAgents.map(({agentId, tokenId}) => {
                       const agentNames: Record<string, string> = {
-                        'a1': '🦅 Eagleton (Navigator)',
-                        'a2': '🔮 Liora (Analyst)',
-                        'a3': '🦊 Reynard (Trader)',
-                        'a4': '🐻 Mara (Guardian)',
-                        'a5': '⏳ Kairos (Oracle)',
-                        'a6': '🕊 Sylph (Messenger)'
+                        'a0': '🦁 Aslan the Great (Commander)',
+                        'a1': '🦅 Eagleton Skywatcher (Navigator)',
+                        'a2': '🦉 Athena Nightwing (Archivist)',
+                        'a3': '🦊 Reynard Swift (Merchant)',
+                        'a4': '🐻 Ursus Guardian (Sentinel)',
+                        'a5': '🐺 Luna Mysticfang (Oracle)',
+                        'a6': '🐦 Corvus Messenger (Glitch)'
                       };
                       return (
                         <option key={agentId} value={Number(tokenId)}>

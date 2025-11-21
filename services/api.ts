@@ -258,6 +258,99 @@ export const geminiService = {
     const prompt = `You are a ${agentRole} agent in a decentralized AI network. Given context: ${context}. Suggest the next optimal action in 1 sentence.`;
     const response = await this.chat({ prompt, temperature: 0.8 });
     return response.text;
+  },
+
+  async generateTechnicalSignal(asset: string, currentPrice: number, priceData: any): Promise<{
+    signal: 'BUY' | 'SELL' | 'HOLD';
+    confidence: number;
+    analysis: string;
+    entry: number;
+    target: number;
+    stopLoss: number;
+    reasoning: string;
+  }> {
+    // Check rate limit
+    if (!rateLimiter.canMakeCall('gemini')) {
+      return {
+        signal: 'HOLD',
+        confidence: 0,
+        analysis: 'AI rate limited - analysis pending',
+        entry: currentPrice,
+        target: currentPrice,
+        stopLoss: currentPrice * 0.95,
+        reasoning: 'Rate limit reached'
+      };
+    }
+
+    const prompt = `You are Luna Mysticfang, an expert crypto technical analyst with deep knowledge of price action, indicators, and market psychology.
+
+Asset: ${asset}
+Current Price: $${currentPrice}
+Market Context: ${JSON.stringify(priceData)}
+
+Analyze this asset and provide:
+1. Trading signal (BUY/SELL/HOLD)
+2. Confidence level (0-100)
+3. Brief technical analysis (2-3 sentences, clear and actionable)
+4. Entry price recommendation
+5. Target price
+6. Stop-loss level
+7. Key reasoning (1 sentence)
+
+Provide response in this exact JSON format:
+{
+  "signal": "BUY/SELL/HOLD",
+  "confidence": 85,
+  "analysis": "Brief analysis here",
+  "entry": ${currentPrice},
+  "target": ${currentPrice * 1.1},
+  "stopLoss": ${currentPrice * 0.95},
+  "reasoning": "Key reason here"
+}`;
+
+    try {
+      const response = await this.chat({ prompt, temperature: 0.3 });
+      
+      // Try to parse JSON response
+      const jsonMatch = response.text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          signal: parsed.signal || 'HOLD',
+          confidence: parsed.confidence || 50,
+          analysis: parsed.analysis || response.text.substring(0, 200),
+          entry: parsed.entry || currentPrice,
+          target: parsed.target || currentPrice * 1.08,
+          stopLoss: parsed.stopLoss || currentPrice * 0.95,
+          reasoning: parsed.reasoning || 'Technical analysis'
+        };
+      }
+      
+      // Fallback parsing
+      const signal = response.text.toUpperCase().includes('BUY') ? 'BUY' : 
+                    response.text.toUpperCase().includes('SELL') ? 'SELL' : 'HOLD';
+      
+      return {
+        signal: signal as 'BUY' | 'SELL' | 'HOLD',
+        confidence: 65,
+        analysis: response.text.substring(0, 200),
+        entry: currentPrice,
+        target: signal === 'BUY' ? currentPrice * 1.08 : currentPrice * 0.95,
+        stopLoss: currentPrice * 0.95,
+        reasoning: 'AI technical analysis'
+      };
+    } catch (error) {
+      console.error('Technical signal generation error:', error);
+      return {
+        signal: 'HOLD',
+        confidence: 0,
+        analysis: 'Analysis error - standing by',
+        entry: currentPrice,
+        target: currentPrice,
+        stopLoss: currentPrice * 0.95,
+        reasoning: 'Error in analysis'
+      };
+    }
   }
 };
 
@@ -1003,11 +1096,178 @@ export const sauceSwapService = {
   }
 };
 
+// ===========================
+// PYTH NETWORK PRICE SERVICE
+// ===========================
+
+export const pythNetworkService = {
+  // Pyth Network price feed IDs
+  PRICE_FEED_IDS: {
+    BTC: 'c5e0e0c92116c0c070a242b254270441a6201af680a33e0381561c59db3266c9',
+    ETH: '06c217a791f5c4f988b36629af4cb88fad827b2485400a358f3b02886b54de92',
+    HBAR: '3728e591097635310e6341af53db8b7ee42da9b3a8d918f9463ce9cca886dfbd',
+    BNB: '2f95862b045670cd22bee3114c39763a4a08beeb663b145d283c31d7d1101c4f',
+    SOL: 'c2289a6a43d2ce91c6f55caec370f4acc38a2ed477f58813334c6d03749ff2a4'
+  },
+  
+  async getPrice(asset: 'BTC' | 'ETH' | 'HBAR' | 'BNB' | 'SOL'): Promise<{ price: number; confidence: number; timestamp: number; dataSource: string } | null> {
+    const cacheKey = `pyth_${asset.toLowerCase()}_price`;
+    
+    // Check cache first (30 seconds TTL for real-time price)
+    const cached = cache.get<{ price: number; confidence: number; timestamp: number; dataSource: string }>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const feedId = this.PRICE_FEED_IDS[asset];
+    if (!feedId) {
+      console.error(`No Pyth feed ID for asset: ${asset}`);
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        `https://hermes.pyth.network/v2/updates/price/latest?ids%5B%5D=${feedId}`,
+        { headers: { 'accept': 'application/json' } }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Pyth Network API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.parsed && data.parsed.length > 0) {
+        const priceData = data.parsed[0].price;
+        const price = Number(priceData.price) * Math.pow(10, priceData.expo); // Apply exponent
+        const confidence = Number(priceData.conf) * Math.pow(10, priceData.expo);
+        
+        const result = {
+          price,
+          confidence,
+          timestamp: Number(priceData.publish_time) * 1000, // Convert to milliseconds
+          dataSource: 'Pyth Network'
+        };
+
+        // Cache for 30 seconds
+        cache.set(cacheKey, result, 30);
+        
+        return result;
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`Pyth Network error for ${asset}:`, error);
+      return null;
+    }
+  },
+  
+  // Legacy method for backward compatibility
+  async getHBARPrice(): Promise<{ price: number; confidence: number; timestamp: number } | null> {
+    const result = await this.getPrice('HBAR');
+    if (!result) return null;
+    return {
+      price: result.price,
+      confidence: result.confidence,
+      timestamp: result.timestamp
+    };
+  }
+};
+
+// ===========================
+// HEDERA SWAP TRACKING SERVICE
+// ===========================
+
+export const hederaSwapTracker = {
+  SAUCERSWAP_ROUTER_ADDRESS: '0x00000000000000000000000000000000002e1fa7', // Example
+  
+  async getRecentSwaps(timeWindowMinutes: number = 60, maxResults: number = 5): Promise<any[]> {
+    const cacheKey = `hedera_swaps_${timeWindowMinutes}`;
+    
+    // Check cache (1 minute TTL)
+    const cached = cache.get<any[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      const unixFrom = now - (timeWindowMinutes * 60);
+      const unixTo = now;
+
+      // Swap event signature: Swap(address,uint256,uint256,uint256,uint256,address)
+      const swapTopic = '0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822';
+      
+      // Build query string manually to support multiple timestamp parameters
+      const queryParams = [
+        `timestamp=gte:${unixFrom}`,
+        `timestamp=lte:${unixTo}`,
+        `topic0=${swapTopic}`,
+        `limit=${maxResults * 2}`
+      ].join('&');
+
+      const url = `${HEDERA_MIRROR_NODE_URL}/contracts/results/logs?${queryParams}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Hedera Mirror Node error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const logs = data.logs || [];
+
+      // Group logs by transaction hash
+      const groupedLogs: Record<string, any[]> = {};
+      for (const log of logs) {
+        const txHash = log.transaction_hash;
+        if (!groupedLogs[txHash]) {
+          groupedLogs[txHash] = [];
+        }
+        groupedLogs[txHash].push(log);
+      }
+
+      // Parse swaps
+      const swaps: any[] = [];
+      Object.keys(groupedLogs).slice(0, maxResults).forEach(txHash => {
+        const logs = groupedLogs[txHash].sort((a: any, b: any) => a.index - b.index);
+        
+        for (const log of logs) {
+          try {
+            // Parse log data (simplified - would need actual ABI decoding)
+            const pairAddress = log.address;
+            const timestamp = new Date(parseFloat(log.timestamp) * 1000).toLocaleString();
+            
+            swaps.push({
+              txHash,
+              pairAddress,
+              timestamp,
+              explorerUrl: `https://hashscan.io/testnet/transaction/${txHash}`,
+              blockNumber: log.block_number
+            });
+          } catch (error) {
+            console.warn('Failed to parse swap log:', error);
+          }
+        }
+      });
+
+      // Cache for 1 minute
+      cache.set(cacheKey, swaps, 60);
+      
+      return swaps;
+    } catch (error) {
+      console.error('Hedera swap tracking error:', error);
+      return [];
+    }
+  }
+};
+
 // Make utilities available globally for debugging
 if (typeof window !== 'undefined') {
   (window as any).apiUtils = apiUtils;
   (window as any).agentStatusManager = agentStatusManager;
   (window as any).sauceSwapService = sauceSwapService;
+  (window as any).pythNetworkService = pythNetworkService;
+  (window as any).hederaSwapTracker = hederaSwapTracker;
   
   // Helpful console commands
   console.log('%c🤖 SPRITEOPS API UTILITIES', 'color: #39ff14; font-weight: bold; font-size: 14px;');

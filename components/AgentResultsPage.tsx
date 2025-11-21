@@ -141,8 +141,8 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
     const orders: { [key: string]: string } = {
       'a1': `"Monitor all major DeFi token prices using ${ability.apis.join(' & ')}. Provide real-time market intelligence on HBAR, ETH, BTC, and SAUCE pairs. Track volume spikes and price movements."`,
       'a2': `"Analyze market sentiment across news sources using ${ability.apis.join(' & ')}. Process breaking news about Hedera, DeFi, and crypto markets. Score sentiment and detect emerging trends."`,
-      'a3': `"Execute profitable swaps on ${ability.apis[0]} when conditions are favorable. Manage HBAR/SAUCE liquidity, calculate slippage, and monitor DEX pools. Maximum trade: ${ability.maxTradeSize}."`,
-      'a4': `"Assess portfolio risk using ${ability.apis.join(' & ')}. Calculate volatility metrics, position sizing, and black swan probability. Protect against excessive exposure."`,
+      'a3': `"Execute HBAR trading operations on ${ability.apis[0]} when conditions are favorable. Trade HBAR/USDC and HBAR/SAUCE pairs, calculate slippage, and monitor DEX pools.${(ability as any).maxTradeSize ? ` Maximum trade: ${(ability as any).maxTradeSize}.` : ''}"`,
+      'a4': `"Assess portfolio risk and calculate risk metrics using ${ability.apis.join(' & ')}. Analyze volatility, risk-reward ratios, position sizing, and portfolio exposure. Protect against excessive risk."`,
       'a5': `"Generate AI-powered predictions using ${ability.apis.join(' & ')}. Analyze chart patterns, forecast price movements, and identify support/resistance levels for key assets."`,
       'a6': `"Monitor breaking news and whale movements using ${ability.apis.join(' & ')}. Alert on major transactions, detect market-moving events, and track real-time developments."`
     };
@@ -250,25 +250,30 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
         );
       }
 
-      // Market Research - CoinGecko comprehensive data
+      // Market Research - Price data with proper formatting
       if (result.taskType === 'market_research' && data.price) {
+        const priceDisplay = data.price < 1 
+          ? `$${data.price.toFixed(3)}` 
+          : `$${data.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`;
+        const changeAmount = data.price * (data.changePercent / 100);
+        const volumeDisplay = typeof data.volume === 'string' ? data.volume : `$${(data.volume / 1e9).toFixed(2)}B`;
+        const marketCapDisplay = typeof data.marketCap === 'string' ? data.marketCap : `$${(data.marketCap / 1e9).toFixed(2)}B`;
+        
         return (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-gray-900/50 border border-neon-green/30 rounded-lg p-4">
                 <div className="text-xs text-gray-400 mb-1 font-mono">CURRENT PRICE</div>
-                <div className="text-2xl font-bold text-neon-green font-mono">${data.price.toLocaleString()}</div>
-                {data.symbol && (
-                  <div className="text-xs text-gray-500 mt-1 font-mono">{data.symbol}/USD</div>
-                )}
+                <div className="text-2xl font-bold text-neon-green font-mono">{priceDisplay}</div>
+                <div className="text-xs text-gray-500 mt-1 font-mono">{data.asset || data.symbol}/USD</div>
               </div>
               <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
                 <div className="text-xs text-gray-400 mb-1 font-mono">24H CHANGE</div>
                 <div className={`text-2xl font-bold font-mono ${data.changePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {data.changePercent >= 0 ? '+' : ''}{data.changePercent.toFixed(2)}%
                 </div>
-                <div className={`text-xs mt-1 font-mono ${data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {data.change >= 0 ? '+' : ''}${data.change.toFixed(2)}
+                <div className={`text-xs mt-1 font-mono ${data.changePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  ${data.changePercent >= 0 ? '+' : ''}{changeAmount.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -276,11 +281,11 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
                 <div className="text-xs text-gray-400 mb-1 font-mono">24H VOLUME</div>
-                <div className="text-lg font-mono text-white">${(data.volume / 1e9).toFixed(2)}B</div>
+                <div className="text-lg font-mono text-white">{volumeDisplay}</div>
               </div>
               <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
                 <div className="text-xs text-gray-400 mb-1 font-mono">MARKET CAP</div>
-                <div className="text-lg font-mono text-white">${(data.marketCap / 1e9).toFixed(2)}B</div>
+                <div className="text-lg font-mono text-white">{marketCapDisplay}</div>
               </div>
             </div>
 
@@ -288,11 +293,15 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
                   <div className="text-xs text-gray-400 mb-1 font-mono">24H HIGH</div>
-                  <div className="text-sm font-mono text-green-400">${data.high24h?.toLocaleString()}</div>
+                  <div className="text-sm font-mono text-green-400">
+                    ${data.high24h < 1 ? data.high24h.toFixed(3) : data.high24h?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                  </div>
                 </div>
                 <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
                   <div className="text-xs text-gray-400 mb-1 font-mono">24H LOW</div>
-                  <div className="text-sm font-mono text-red-400">${data.low24h?.toLocaleString()}</div>
+                  <div className="text-sm font-mono text-red-400">
+                    ${data.low24h < 1 ? data.low24h.toFixed(3) : data.low24h?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                  </div>
                 </div>
               </div>
             )}
@@ -302,7 +311,7 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
                 <Activity className="w-3 h-3" />
                 <span>DATA SOURCE</span>
               </div>
-              <div className="text-xs text-gray-400">Real-time market data from CoinGecko API</div>
+              <div className="text-xs text-gray-400">{data.dataSource || 'Real-time market data from CoinGecko API'}</div>
             </div>
           </div>
         );
@@ -661,12 +670,12 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
               {/* Task Results */}
               <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto">
                 {agentResults.map((result, idx) => {
-                  const isExpanded = expandedResults.has(idx);
                   const globalIdx = results.indexOf(result);
+                  const isExpanded = expandedResults.has(globalIdx);
                   
                   return (
                     <div 
-                      key={idx}
+                      key={globalIdx}
                       className="bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden hover:border-neon-green/30 transition-all"
                     >
                       {/* Task Header */}
@@ -681,7 +690,10 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="font-semibold text-white font-mono text-sm">
-                                {getTaskName(result.taskType)}
+                                {/* Use custom operation title if available, otherwise use default task name */}
+                                {(result.data && typeof result.data === 'object' && 'operationTitle' in result.data) 
+                                  ? (result.data as any).operationTitle 
+                                  : getTaskName(result.taskType)}
                               </h3>
                               {getStatusBadge(result.status)}
                               <span className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-400 text-xs font-mono">
