@@ -3,6 +3,7 @@ import { AgentMetadata } from '../types';
 import { X, Copy, Terminal, Zap } from 'lucide-react';
 import { AGENT_ABILITIES } from '../constants';
 import { useAccount } from 'wagmi';
+import LottieAvatar from './LottieAvatar';
 
 interface AgentDetailPanelProps {
   agent: AgentMetadata | null;
@@ -31,12 +32,21 @@ const AgentDetailPanel: React.FC<AgentDetailPanelProps> = ({ agent, onClose }) =
         <div className="flex flex-col items-center mb-6">
            <div className="w-32 h-32 border border-white/20 rounded-lg p-2 bg-black relative overflow-hidden group">
              <div className="absolute inset-0 bg-neon-green/20 blur-xl opacity-50"></div>
-             <img 
-                src={agent.avatar} 
-                className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"
-                style={{ imageRendering: 'pixelated' }}
-                alt={agent.name}
-             />
+             {agent.avatarType === 'lottie' ? (
+               <LottieAvatar 
+                 animationPath={agent.avatar}
+                 width={112}
+                 height={112}
+                 className="relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"
+               />
+             ) : (
+               <img 
+                  src={agent.avatar} 
+                  className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"
+                  style={{ imageRendering: 'pixelated' }}
+                  alt={agent.name}
+               />
+             )}
              <div className="absolute bottom-0 left-0 right-0 bg-neon-green/20 h-1/3 blur-xl"></div>
            </div>
            <h1 className="text-2xl font-bold text-white mt-4 font-mono">{agent.name}</h1>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AgentTaskResult, AgentMetadata } from '../types';
 import { TrendingUp, TrendingDown, Shield, Search, Target, Zap, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, Activity, Server, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { AGENT_ABILITIES } from '../constants';
+import LottieAvatar from './LottieAvatar';
 
 interface AgentResultsPageProps {
   agents: AgentMetadata[];
@@ -490,12 +491,21 @@ export const AgentResultsPage: React.FC<AgentResultsPageProps> = ({
                     <div className={`w-16 h-16 rounded-lg border-2 overflow-hidden ${
                         isAgentCaptain ? 'border-yellow-500/50' : 'border-neon-green/50'
                       }`}>
-                      <img 
-                        src={spriteUrl} 
-                        alt={agent.name} 
-                        className="w-full h-full object-cover"
-                        style={{ imageRendering: 'pixelated' }}
-                      />
+                      {agent.avatarType === 'lottie' ? (
+                        <LottieAvatar 
+                          animationPath={spriteUrl}
+                          width={64}
+                          height={64}
+                          className="w-full h-full"
+                        />
+                      ) : (
+                        <img 
+                          src={spriteUrl} 
+                          alt={agent.name} 
+                          className="w-full h-full object-cover"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
+                      )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">

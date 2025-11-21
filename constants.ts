@@ -11,7 +11,8 @@ export const AGENTS: AgentMetadata[] = [
     trustScore: 100,
     walletAddress: '0xFF...AAAA',
     spriteSeed: 'lion-king-crown-golden-majestic',
-    avatar: '/avatars/aslan.png',
+    avatar: '/lottie/Lion - Breath.json',
+    avatarType: 'lottie' as const,
     status: 'idle',
     personality: {
       traits: ['Authoritative', 'Strategic', 'Decisive', 'Protective'],
@@ -35,7 +36,8 @@ export const AGENTS: AgentMetadata[] = [
     trustScore: 98,
     walletAddress: '0x71...A9f2',
     spriteSeed: 'eagle-bird-scout-teal-wings',
-    avatar: '/avatars/eagleton.png',
+    avatar: '/lottie/running pigeon.json',
+    avatarType: 'lottie' as const,
     status: 'idle',
     personality: {
       traits: ['Analytical', 'Data-driven', 'Precise', 'Market-savvy'],
@@ -59,7 +61,8 @@ export const AGENTS: AgentMetadata[] = [
     trustScore: 99,
     walletAddress: '0x3B...22c1',
     spriteSeed: 'owl-wise-indigo-scholar',
-    avatar: '/avatars/athena.png',
+    avatar: '/lottie/Duo Attack.json',
+    avatarType: 'lottie' as const,
     status: 'idle',
     personality: {
       traits: ['Wise', 'Insightful', 'Analytical', 'News-savvy'],
@@ -83,7 +86,8 @@ export const AGENTS: AgentMetadata[] = [
     trustScore: 85,
     walletAddress: '0x9A...B612',
     spriteSeed: 'fox-trader-purple-clever',
-    avatar: '/avatars/reynard.png',
+    avatar: '/lottie/Happy Unicorn Dog.json',
+    avatarType: 'lottie' as const,
     status: 'idle',
     personality: {
       traits: ['Opportunistic', 'Fast-trading', 'Risk-aware', 'Sharp'],
@@ -107,7 +111,8 @@ export const AGENTS: AgentMetadata[] = [
     trustScore: 100,
     walletAddress: '0x6C...EE43',
     spriteSeed: 'bear-guardian-black-strong',
-    avatar: '/avatars/ursus.png',
+    avatar: '/lottie/Cute bear dancing.json',
+    avatarType: 'lottie' as const,
     status: 'idle',
     personality: {
       traits: ['Protective', 'Risk-averse', 'Analytical', 'Duty-bound'],
@@ -131,7 +136,8 @@ export const AGENTS: AgentMetadata[] = [
     trustScore: 96,
     walletAddress: '0xCC...881b',
     spriteSeed: 'wolf-mystic-violet-prophecy',
-    avatar: '/avatars/luna.png',
+    avatar: '/lottie/happy fox.json',
+    avatarType: 'lottie' as const,
     status: 'idle',
     personality: {
       traits: ['Analytical', 'Predictive', 'Pattern-focused', 'AI-augmented'],
@@ -155,7 +161,8 @@ export const AGENTS: AgentMetadata[] = [
     trustScore: 42,
     walletAddress: '0x00...0000',
     spriteSeed: 'raven-messenger-black-alert',
-    avatar: '/avatars/corvus.png',
+    avatar: '/lottie/Dragon.json',
+    avatarType: 'lottie' as const,
     status: 'idle',
     personality: {
       traits: ['Alert', 'Fast', 'Information-hungry', 'Reactive'],

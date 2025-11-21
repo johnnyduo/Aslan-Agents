@@ -15,6 +15,7 @@ import ReactFlow, {
   MarkerType,
 } from 'reactflow';
 import { AgentMetadata } from '../types';
+import LottieAvatar from './LottieAvatar';
 
 // --- Custom Agent Node Component ---
 const AgentNode = React.memo(({ data }: NodeProps) => {
@@ -58,12 +59,22 @@ const AgentNode = React.memo(({ data }: NodeProps) => {
           ${data.isStreaming ? 'border-neon-green animate-spin-slow' : 'border-white/20'}
         `}></div>
         
-        <img 
-          src={spriteUrl} 
-          alt={agent.name}
-          className="w-full h-full object-contain p-2"
-          style={{ imageRendering: 'pixelated' }}
-        />
+        {agent.avatarType === 'lottie' ? (
+          <div className="w-full h-full p-2">
+            <LottieAvatar 
+              animationPath={spriteUrl}
+              width={64}
+              height={64}
+            />
+          </div>
+        ) : (
+          <img 
+            src={spriteUrl} 
+            alt={agent.name}
+            className="w-full h-full object-contain p-2"
+            style={{ imageRendering: 'pixelated' }}
+          />
+        )}
       </div>
 
       <div className="bg-black/80 backdrop-blur border border-neon-green/50 px-3 py-1 rounded-md text-center min-w-[120px]">

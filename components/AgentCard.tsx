@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AgentMetadata } from '../types';
 import { Activity, Shield, Cpu, Hash, ExternalLink, Lock, Loader2 } from 'lucide-react';
+import LottieAvatar from './LottieAvatar';
 
 interface AgentCardProps {
   agent: AgentMetadata;
@@ -81,13 +82,22 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, isActive, onToggle, onClic
         {/* Sprite Avatar Container */}
         <div className="w-20 h-20 mb-4 relative">
             <div className="absolute inset-0 bg-neon-green/20 rounded-full blur-xl opacity-50"></div>
-            <img 
-              src={spriteUrl} 
-              alt={agent.name} 
-              className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] transition-all group-hover:scale-110 duration-300"
-              style={{ imageRendering: 'pixelated' }}
-              onLoad={() => setSpriteLoaded(true)}
-            />
+            {agent.avatarType === 'lottie' ? (
+              <LottieAvatar 
+                animationPath={spriteUrl}
+                width={80}
+                height={80}
+                className="relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] transition-all group-hover:scale-110 duration-300"
+              />
+            ) : (
+              <img 
+                src={spriteUrl} 
+                alt={agent.name} 
+                className="w-full h-full object-contain relative z-10 drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)] transition-all group-hover:scale-110 duration-300"
+                style={{ imageRendering: 'pixelated' }}
+                onLoad={() => setSpriteLoaded(true)}
+              />
+            )}
         </div>
 
         <h3 className="text-white font-bold font-mono tracking-tight">{agent.name}</h3>
