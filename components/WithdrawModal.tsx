@@ -26,6 +26,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [userStreams, setUserStreams] = useState<string[]>([]);
   const [withdrawingStreamId, setWithdrawingStreamId] = useState<string | null>(null);
   const [step, setStep] = useState<'list' | 'success'>('list');
+  const [successHandled, setSuccessHandled] = useState(false);
 
   // Load user's created streams
   useEffect(() => {
@@ -58,7 +59,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   // Handle successful withdrawal
   useEffect(() => {
-    if (isSuccess && hash && withdrawingStreamId) {
+    if (isSuccess && hash && withdrawingStreamId && !successHandled) {
+      setSuccessHandled(true);
       setStep('success');
       
       toast.success(
@@ -80,7 +82,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
         onWithdrawSuccess();
       }
     }
-  }, [isSuccess, hash, withdrawingStreamId, onWithdrawSuccess]);
+  }, [isSuccess, hash, withdrawingStreamId, successHandled]);
 
   // Handle errors
   useEffect(() => {
@@ -106,12 +108,14 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     }
 
     setWithdrawingStreamId(streamId);
+    setSuccessHandled(false); // Reset success flag for new withdrawal
     
     try {
       await withdraw(Number(streamId));
     } catch (err) {
       console.error('Withdrawal failed:', err);
       setWithdrawingStreamId(null);
+      setSuccessHandled(false);
     }
   };
 
@@ -119,6 +123,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     if (!isPending) {
       setStep('list');
       setWithdrawingStreamId(null);
+      setSuccessHandled(false);
       onClose();
     }
   };

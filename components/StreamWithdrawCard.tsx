@@ -25,7 +25,6 @@ export const StreamWithdrawCard: React.FC<StreamWithdrawCardProps> = ({
 
   // Parse stream data - viem returns tuple as array-like object
   // Stream structure: [senderAgentId, receiverAgentId, asset, ratePerSecond, spendingCap, amountPaid, startTime, lastPushTime, closed]
-  console.log('Stream #' + streamId + ' raw data:', streamData);
   
   let senderAgentId = '?';
   let receiverAgentId = '?';
@@ -45,8 +44,6 @@ export const StreamWithdrawCard: React.FC<StreamWithdrawCardProps> = ({
       spendingCap = streamData[4] !== undefined ? BigInt(streamData[4]) : ((streamData as any).spendingCap ? BigInt((streamData as any).spendingCap) : 0n);
       amountPaid = streamData[5] !== undefined ? BigInt(streamData[5]) : ((streamData as any).amountPaid ? BigInt((streamData as any).amountPaid) : 0n);
       isClosed = streamData[8] !== undefined ? Boolean(streamData[8]) : Boolean((streamData as any).closed);
-      
-      console.log('Parsed stream data:', { senderAgentId, receiverAgentId, ratePerSecond: ratePerSecond.toString(), spendingCap: spendingCap.toString(), amountPaid: amountPaid.toString(), isClosed });
     } catch (err) {
       console.error('Error parsing stream data:', err);
     }

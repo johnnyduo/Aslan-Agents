@@ -131,15 +131,6 @@ export const useX402Deposit = () => {
         ? USDC_ADDRESS 
         : USDC_ADDRESS; // Fallback to USDC, X402 doesn't support native HBAR
 
-      console.log('Opening x402 stream:', {
-        senderAgentId,
-        receiverAgentId,
-        ratePerSecond: rate.toString(),
-        spendingCap: spendingCap.toString(),
-        asset: assetAddress,
-        note: 'ERC20 only - openStream is not payable'
-      });
-
       // For USDC, check approval first
       if (asset === 'USDC') {
         // This would need to check allowance via useReadContract
@@ -319,6 +310,7 @@ export const useX402CloseStream = () => {
 
 /**
  * Hook to withdraw accumulated payments (receiver only)
+ * Note: This automatically calls pushPayments first to update withdrawable balance
  */
 export const useX402Withdraw = () => {
   const { address } = useAccount();
@@ -330,15 +322,36 @@ export const useX402Withdraw = () => {
     if (!address) throw new Error('Wallet not connected');
     
     try {
-      // Set reasonable gas limit for Hedera
-      const gasLimit = BigInt(300000); // ~0.3M gas units for simple withdrawal
+      // IMPORTANT: Must call pushPayments first to update _withdrawableBalance
+      // The contract's withdraw() function checks _withdrawableBalance, not calculateOwed()
+      // pushPayments transfers funds from sender to contract and updates withdrawable balance
       
+      // Step 1: Push payments to update withdrawable balance
+      console.log(`🔄 Pushing payments for stream #${streamId}...`);
+      const pushTx = await writeContractAsync({
+        address: X402_STREAMING_ADDRESS,
+        abi: X402StreamingABI.abi,
+        functionName: 'pushPayments',
+        args: [BigInt(streamId)],
+        gas: BigInt(300000),
+        account: address,
+        chain: config.chains[0],
+      });
+      
+      console.log(`✅ Payments pushed, tx: ${pushTx}`);
+      
+      // Wait a moment for the push to be confirmed before withdrawing
+      // This ensures the _withdrawableBalance is updated
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Step 2: Now withdraw the funds
+      console.log(`💰 Withdrawing from stream #${streamId}...`);
       await writeContractAsync({
         address: X402_STREAMING_ADDRESS,
         abi: X402StreamingABI.abi,
         functionName: 'withdraw',
         args: [BigInt(streamId)],
-        gas: gasLimit,
+        gas: BigInt(300000),
         account: address,
         chain: config.chains[0],
       });

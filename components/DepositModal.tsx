@@ -51,8 +51,6 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         // StreamOpened event signature: StreamOpened(uint256 indexed streamId, uint256 indexed senderAgentId, uint256 indexed receiverAgentId, address asset, uint256 ratePerSecond, uint256 spendingCap)
         const streamOpenedTopic = '0x0edde3241ad68cd979eb9449c1e3d81bbef9eee85a02fefe8a2eaed04888231d';
         
-        console.log('Receipt logs:', streamReceipt.logs);
-        
         if (streamReceipt.logs && streamReceipt.logs.length > 0) {
           // Find the StreamOpened event log
           const streamLog = streamReceipt.logs.find(log => 
@@ -62,10 +60,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({
           if (streamLog && streamLog.topics && streamLog.topics.length > 1) {
             // First topic is event signature, second is streamId (first indexed param)
             // Use BigInt to handle large uint256 values, then convert to string
-            console.log('Stream ID hex:', streamLog.topics[1]);
             const streamIdBigInt = BigInt(streamLog.topics[1]);
             parsedStreamId = streamIdBigInt.toString();
-            console.log('Parsed stream ID:', parsedStreamId);
           } else {
             console.warn('StreamOpened event not found in logs');
           }

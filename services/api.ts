@@ -457,8 +457,38 @@ export interface CryptoPriceData {
   dataSource?: string;
 }
 
+// Map common symbols/names to CoinGecko IDs
+function getCoinGeckoId(input: string): string {
+  const mapping: Record<string, string> = {
+    'btc': 'bitcoin',
+    'bitcoin': 'bitcoin',
+    'eth': 'ethereum',
+    'ethereum': 'ethereum',
+    'hbar': 'hedera-hashgraph',
+    'hedera': 'hedera-hashgraph',
+    'bnb': 'binancecoin',
+    'binancecoin': 'binancecoin',
+    'sol': 'solana',
+    'solana': 'solana',
+    'usdc': 'usd-coin',
+    'usdt': 'tether',
+    'xrp': 'ripple',
+    'ada': 'cardano',
+    'doge': 'dogecoin',
+    'matic': 'matic-network',
+    'polygon': 'matic-network',
+    'avax': 'avalanche-2',
+    'avalanche': 'avalanche-2'
+  };
+  
+  const normalized = input.toLowerCase().trim();
+  return mapping[normalized] || normalized;
+}
+
 export const coingeckoService = {
   async getMarketData(coinId: string = 'ethereum'): Promise<CryptoPriceData> {
+    // Convert symbol to CoinGecko ID
+    coinId = getCoinGeckoId(coinId);
     const cacheKey = `coingecko_${coinId}`;
     
     // Check cache first (2 minutes TTL for market data)
